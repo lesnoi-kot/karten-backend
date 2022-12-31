@@ -1,0 +1,8 @@
+linters:
+  enable-all: false
+
+  presets:
+    - bugs
+    - comment
+    - error
+    - format
