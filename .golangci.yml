@@ -1,8 +1,27 @@
 linters:
-  enable-all: false
+  disable-all: true
 
-  presets:
-    - bugs
-    - comment
-    - error
-    - format
+  enable:
+    - decorder
+    - dupl
+    - errname
+    - errorlint
+    - funlen
+    - goconst
+    - godot
+    - gofmt
+    - gomnd
+    - goprintffuncname
+    - gosec
+    - gocritic
+    - interfacebloat
+    - ireturn
+    - lll
+    - loggercheck
+    - makezero
+    - nestif
+    - nilerr
+    - nilnil
+    - predeclared
+    - testpackage
+    - unconvert
