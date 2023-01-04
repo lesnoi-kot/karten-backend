@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/lesnoi-kot/karten-backend/src/store/models"
+	"github.com/lesnoi-kot/karten-backend/src/store"
 )
 
 func (api *APIService) getTask(c echo.Context) error {
 	id := c.Param("id")
 
-	var task models.Task
+	var task store.Task
 
 	err := api.store.
 		NewSelect().
@@ -49,7 +49,7 @@ func (api *APIService) addTask(c echo.Context) error {
 
 	dueDate, _ := time.Parse("", body.DueDate)
 
-	task := models.Task{
+	task := store.Task{
 		TaskListID: taskListID,
 		Name:       body.Name,
 		Text:       body.Text,
@@ -75,7 +75,7 @@ func (api *APIService) deleteTask(c echo.Context) error {
 
 	result, err := api.store.
 		NewDelete().
-		Model((*models.Task)(nil)).
+		Model((*store.Task)(nil)).
 		Where("id = ?", id).
 		Exec(context.Background())
 	if err != nil {

@@ -8,13 +8,13 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
-	"github.com/lesnoi-kot/karten-backend/src/store/models"
+	"github.com/lesnoi-kot/karten-backend/src/store"
 )
 
 func (api *APIService) getTaskList(c echo.Context) error {
 	id := c.Param("id")
 
-	var taskList models.TaskList
+	var taskList store.TaskList
 
 	err := api.store.
 		NewSelect().
@@ -45,7 +45,7 @@ func (api *APIService) addTaskList(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
-	taskList := models.TaskList{
+	taskList := store.TaskList{
 		BoardID: boardID,
 		Name:    body.Name,
 		Color:   body.Color,
@@ -69,7 +69,7 @@ func (api *APIService) deleteTaskList(c echo.Context) error {
 
 	result, err := api.store.
 		NewDelete().
-		Model((*models.TaskList)(nil)).
+		Model((*store.TaskList)(nil)).
 		Where("id = ?", id).
 		Exec(context.Background())
 	if err != nil {
@@ -87,10 +87,10 @@ func (api *APIService) editTaskList(c echo.Context) error {
 	id := c.Param("id")
 
 	var body struct {
-		Name     string        `json:"name" validate:"required,min=1,max=32"`
-		Archived *bool         `json:"archived"`
-		Position *int64        `json:"position"`
-		Color    *models.Color `json:"color"`
+		Name     string       `json:"name" validate:"required,min=1,max=32"`
+		Archived *bool        `json:"archived"`
+		Position *int64       `json:"position"`
+		Color    *store.Color `json:"color"`
 	}
 
 	if err := c.Bind(&body); err != nil {
@@ -103,7 +103,7 @@ func (api *APIService) editTaskList(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
-	board := models.TaskList{
+	board := store.TaskList{
 		Name:     body.Name,
 		Archived: *body.Archived,
 		Position: *body.Position,

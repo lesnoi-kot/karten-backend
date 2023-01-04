@@ -2,13 +2,15 @@ package api
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/uptrace/bun"
+	"github.com/lesnoi-kot/karten-backend/src/store"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapio"
 )
 
 const (
@@ -16,23 +18,29 @@ const (
 )
 
 type APIService struct {
-	handler *echo.Echo
-	store   *bun.DB
-	logger  *zap.Logger
+	handler   *echo.Echo
+	store     *store.Store
+	logger    *zap.SugaredLogger
+	apiPrefix string
 }
 
 type APIConfig struct {
-	DB     *bun.DB
-	Logger *zap.Logger
+	Store     *store.Store
+	Logger    *zap.SugaredLogger
+	APIPrefix string
 }
 
 func NewAPI(c APIConfig) *APIService {
 	api := &APIService{
-		handler: echo.New(),
-		store:   c.DB,
-		logger:  c.Logger,
+		handler:   echo.New(),
+		store:     c.Store,
+		logger:    c.Logger,
+		apiPrefix: c.APIPrefix,
 	}
 
+	api.handler.Logger.SetOutput(
+		&zapio.Writer{Log: c.Logger.Desugar(), Level: zap.DebugLevel},
+	)
 	api.handler.Validator = &Validator{validator.New()}
 
 	api.handler.Pre(middleware.RemoveTrailingSlash())
@@ -57,8 +65,16 @@ func (a APIService) Shutdown() error {
 	return a.handler.Shutdown(ctx)
 }
 
+func (a APIService) Server() *http.Server {
+	return a.handler.Server
+}
+
+func (a APIService) Prefix() string {
+	return a.apiPrefix
+}
+
 func initRoutes(api *APIService) {
-	root := api.handler.Group("/api")
+	root := api.handler.Group(api.apiPrefix)
 
 	initProjectsRoute(root, api)
 	initBoardsRoute(root, api)

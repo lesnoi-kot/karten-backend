@@ -15,48 +15,67 @@ import (
 type AppConfig struct {
 	StoreDSN       string `env:"STORE_DSN,notEmpty,unset"`
 	APIBindAddress string `env:"API_HOST,notEmpty"`
+	Debug          bool   `env:"DEBUG"`
 }
 
 func main() {
-	logger := zap.Must(zap.NewProduction())
+	logger := prepareLogger(os.Getenv("DEBUG") != "")
 	defer logger.Sync()
 
 	var cfg AppConfig
-
 	if err := env.Parse(&cfg); err != nil {
-		logger.Fatal(err.Error())
+		logger.Fatalw("Config parsing error", "error", err)
 	}
 
-	storeService, err := store.NewDB(cfg.StoreDSN)
-
+	storeService, err := store.NewStore(store.StoreConfig{
+		DSN:    cfg.StoreDSN,
+		Logger: logger,
+		Debug:  cfg.Debug,
+	})
 	if err != nil {
-		logger.Error(err.Error())
-		return
+		logger.Fatalw("DB connection error", "error", err)
 	}
 
 	apiService := api.NewAPI(api.APIConfig{
-		DB:     storeService,
-		Logger: logger,
+		Store:     storeService,
+		Logger:    logger,
+		APIPrefix: "/api",
 	})
 
-	go func() {
-		quit := make(chan os.Signal)
-		signal.Notify(quit, os.Interrupt)
-
-		<-quit
-		logger.Info("Shutting down the server...")
-		apiService.Shutdown()
-	}()
+	go handleSignals(apiService)
 
 	if err := apiService.Start(cfg.APIBindAddress); err != nil {
+		logger.Info("API service is closed")
+
 		if err := storeService.Close(); err != nil {
-			logger.Info("Store connections close error")
+			logger.Errorw("Store connection close error", "error", err)
 		} else {
-			logger.Info("Store connections closed")
+			logger.Info("Store connection is closed")
 		}
 
 		if err != http.ErrServerClosed {
-			logger.Error(err.Error())
+			logger.Errorw("Server stopped with an error", "error", err)
 		}
 	}
+}
+
+func prepareLogger(debug bool) *zap.SugaredLogger {
+	var logger *zap.Logger
+
+	if debug {
+		logger = zap.Must(zap.NewDevelopment())
+	} else {
+		logger = zap.Must(zap.NewProduction())
+	}
+
+	zap.RedirectStdLog(logger)
+	return logger.Sugar()
+}
+
+func handleSignals(apiService *api.APIService) {
+	quit := make(chan os.Signal)
+	signal.Notify(quit, os.Interrupt)
+
+	<-quit
+	apiService.Shutdown()
 }
