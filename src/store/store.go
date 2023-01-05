@@ -13,23 +13,11 @@ import (
 	"go.uber.org/zap/zapio"
 )
 
-var ErrNotFound = errors.New("item not found")
+var ErrNotFound = errors.New("resource not found")
 
 type EditProjectArgs struct {
 	ID   string
 	Name string
-}
-
-type AddBoardArgs struct {
-	Name string
-}
-
-type Repo[T any] interface {
-	Get(id string) (*T, error)
-	GetAll() ([]*T, error)
-	Add(item *T) (*T, error)
-	Edit(item *T) (*T, error)
-	Delete(id string) error
 }
 
 type Store struct {
@@ -44,9 +32,8 @@ type Store struct {
 	}
 	Boards interface {
 		Get(id string) (*Board, error)
-		GetAll() ([]*Board, error)
-		Add(args AddBoardArgs) (*Board, error)
-		Edit(args *Board) (*Board, error)
+		Add(board *Board) error
+		Edit(board *Board) error
 		Delete(id string) error
 	}
 }

@@ -28,6 +28,7 @@ type APIConfig struct {
 	Store     *store.Store
 	Logger    *zap.SugaredLogger
 	APIPrefix string
+	Debug     bool
 }
 
 func NewAPI(c APIConfig) *APIService {
@@ -44,7 +45,10 @@ func NewAPI(c APIConfig) *APIService {
 	api.handler.Validator = &Validator{validator.New()}
 
 	api.handler.Pre(middleware.RemoveTrailingSlash())
-	api.handler.Use(middleware.Logger(), middleware.Recover())
+	api.handler.Use(middleware.Logger())
+	if c.Debug == false {
+		api.handler.Use(middleware.Recover())
+	}
 
 	initRoutes(api)
 

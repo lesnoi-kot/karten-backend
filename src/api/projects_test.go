@@ -22,9 +22,8 @@ type mockProjectsStore struct {
 
 type projectsSuite struct {
 	suite.Suite
-	store *store.Store
-	api   *api.APIService
-
+	store        *store.Store
+	api          *api.APIService
 	projectsMock *mockProjectsStore
 }
 

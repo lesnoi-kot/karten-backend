@@ -40,6 +40,7 @@ func main() {
 		Store:     storeService,
 		Logger:    logger,
 		APIPrefix: "/api",
+		Debug:     cfg.Debug,
 	})
 
 	go handleSignals(apiService)

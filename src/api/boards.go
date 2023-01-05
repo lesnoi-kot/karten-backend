@@ -1,8 +1,6 @@
 package api
 
 import (
-	"context"
-	"database/sql"
 	"errors"
 	"net/http"
 	"strings"
@@ -13,15 +11,9 @@ import (
 
 func (api *APIService) getBoard(c echo.Context) error {
 	id := c.Param("id")
-	var board store.Board
-
-	err := api.store.
-		NewSelect().
-		Model(&board).
-		Where("id = ?", id).
-		Scan(context.Background())
+	board, err := api.store.Boards.Get(id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, store.ErrNotFound) {
 			return echo.ErrNotFound
 		}
 
@@ -35,7 +27,7 @@ func (api *APIService) addBoard(c echo.Context) error {
 	projectID := c.Param("id")
 
 	var body struct {
-		Name     string      `json:"name" validate:"required,max=32"`
+		Name     string      `json:"name" validate:"required,min=1,max=32"`
 		Color    store.Color `json:"color"`
 		CoverURL string      `json:"cover_url"`
 	}
@@ -44,24 +36,19 @@ func (api *APIService) addBoard(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
+	body.Name = strings.TrimSpace(body.Name)
 	if err := c.Validate(&body); err != nil {
 		return echo.ErrBadRequest
 	}
 
-	board := store.Board{
+	board := &store.Board{
 		ProjectID: projectID,
 		Name:      body.Name,
 		Color:     body.Color,
 		CoverURL:  body.CoverURL,
 	}
 
-	_, err := api.store.
-		NewInsert().
-		Model(&board).
-		Column("project_id", "name", "color", "cover_url").
-		Returning("*").
-		Exec(context.Background())
-	if err != nil {
+	if err := api.store.Boards.Add(board); err != nil {
 		return err
 	}
 
@@ -83,41 +70,32 @@ func (api *APIService) editBoard(c echo.Context) error {
 	}
 
 	body.Name = strings.TrimSpace(body.Name)
-
 	if err := c.Validate(&body); err != nil {
 		return echo.ErrBadRequest
 	}
 
-	board := store.Board{
-		Name:     body.Name,
-		Archived: *body.Archived,
-		Color:    *body.Color,
-		CoverURL: *body.CoverURL,
-	}
-
-	query := api.store.NewUpdate().Model(&board)
-
-	if body.Archived != nil {
-		query = query.Column("archived")
-	}
-	if body.Color != nil {
-		query = query.Column("color")
-	}
-	if body.CoverURL != nil {
-		query = query.Column("cover_url")
-	}
-
-	result, err := query.
-		Column("name").
-		Where("id = ?", id).
-		Returning("*").
-		Exec(context.Background())
+	board, err := api.store.Boards.Get(id)
 	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return echo.ErrNotFound
+		}
+
 		return err
 	}
 
-	if affected, err := result.RowsAffected(); err == nil && affected == 0 {
-		return echo.ErrNotFound
+	board.Name = body.Name
+	if body.Archived != nil {
+		board.Archived = *body.Archived
+	}
+	if body.Color != nil {
+		board.Color = *body.Color
+	}
+	if body.CoverURL != nil {
+		board.CoverURL = *body.CoverURL
+	}
+
+	if err = api.store.Boards.Edit(board); err != nil {
+		return err
 	}
 
 	return c.JSON(http.StatusOK, OK(board))
@@ -126,18 +104,13 @@ func (api *APIService) editBoard(c echo.Context) error {
 func (api *APIService) deleteBoard(c echo.Context) error {
 	id := c.Param("id")
 
-	result, err := api.store.
-		NewDelete().
-		Model((*store.Board)(nil)).
-		Where("id = ?", id).
-		Exec(context.Background())
-	if err != nil {
+	if err := api.store.Boards.Delete(id); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return echo.ErrNotFound
+		}
+
 		return err
 	}
 
-	if affected, err := result.RowsAffected(); err == nil && affected == 0 {
-		return echo.ErrNotFound
-	}
-
-	return c.JSON(http.StatusOK, OK(nil))
+	return c.NoContent(http.StatusNoContent)
 }
