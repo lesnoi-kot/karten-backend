@@ -1,8 +1,6 @@
 package api
 
 import (
-	"context"
-	"database/sql"
 	"errors"
 	"net/http"
 	"strings"
@@ -14,16 +12,9 @@ import (
 func (api *APIService) getTaskList(c echo.Context) error {
 	id := c.Param("id")
 
-	var taskList store.TaskList
-
-	err := api.store.
-		NewSelect().
-		Model(&taskList).
-		Where("id = ?", id).
-		Relation("Tasks").
-		Scan(context.Background())
+	taskList, err := api.store.TaskLists.Get(id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, store.ErrNotFound) {
 			return echo.ErrNotFound
 		}
 
@@ -37,57 +28,37 @@ func (api *APIService) addTaskList(c echo.Context) error {
 	boardID := c.Param("id")
 
 	var body struct {
-		Name  string `json:"name"`
-		Color int    `json:"color"`
+		Name     string `json:"name" validate:"required,min=1,max=32"`
+		Color    int    `json:"color"`
+		Position int64  `json:"position"`
 	}
 
 	if err := c.Bind(&body); err != nil {
 		return echo.ErrBadRequest
 	}
 
-	taskList := store.TaskList{
-		BoardID: boardID,
-		Name:    body.Name,
-		Color:   body.Color,
+	body.Name = strings.TrimSpace(body.Name)
+	if err := c.Validate(&body); err != nil {
+		return echo.ErrBadRequest
 	}
 
-	_, err := api.store.
-		NewInsert().
-		Model(&taskList).
-		Column("board_id", "name", "color").
-		Returning("*").
-		Exec(context.Background())
-	if err != nil {
+	taskList := &store.TaskList{
+		BoardID:  boardID,
+		Name:     body.Name,
+		Color:    body.Color,
+		Position: body.Position,
+	}
+
+	if err := api.store.TaskLists.Add(taskList); err != nil {
 		return err
 	}
 
 	return c.JSON(http.StatusOK, OK(taskList))
 }
 
-func (api *APIService) deleteTaskList(c echo.Context) error {
-	id := c.Param("id")
-
-	result, err := api.store.
-		NewDelete().
-		Model((*store.TaskList)(nil)).
-		Where("id = ?", id).
-		Exec(context.Background())
-	if err != nil {
-		return err
-	}
-
-	if affected, err := result.RowsAffected(); err == nil && affected == 0 {
-		return echo.ErrNotFound
-	}
-
-	return c.JSON(http.StatusOK, OK(nil))
-}
-
 func (api *APIService) editTaskList(c echo.Context) error {
-	id := c.Param("id")
-
 	var body struct {
-		Name     string       `json:"name" validate:"required,min=1,max=32"`
+		Name     *string      `json:"name" validate:"min=1,max=32"`
 		Archived *bool        `json:"archived"`
 		Position *int64       `json:"position"`
 		Color    *store.Color `json:"color"`
@@ -97,43 +68,53 @@ func (api *APIService) editTaskList(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
-	body.Name = strings.TrimSpace(body.Name)
-
+	if body.Name != nil {
+		*body.Name = strings.TrimSpace(*body.Name)
+	}
 	if err := c.Validate(&body); err != nil {
 		return echo.ErrBadRequest
 	}
 
-	board := store.TaskList{
-		Name:     body.Name,
-		Archived: *body.Archived,
-		Position: *body.Position,
-		Color:    *body.Color,
-	}
-
-	query := api.store.NewUpdate().Model(&board)
-
-	if body.Archived != nil {
-		query = query.Column("archived")
-	}
-	if body.Position != nil {
-		query = query.Column("position")
-	}
-	if body.Color != nil {
-		query = query.Column("color")
-	}
-
-	result, err := query.
-		Column("name").
-		Where("id = ?", id).
-		Returning("*").
-		Exec(context.Background())
+	id := c.Param("id")
+	taskList, err := api.store.TaskLists.Get(id)
 	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return echo.ErrNotFound
+		}
+
 		return err
 	}
 
-	if affected, err := result.RowsAffected(); err == nil && affected == 0 {
-		return echo.ErrNotFound
+	if body.Name != nil {
+		taskList.Name = *body.Name
+	}
+	if body.Archived != nil {
+		taskList.Archived = *body.Archived
+	}
+	if body.Position != nil {
+		taskList.Position = *body.Position
+	}
+	if body.Color != nil {
+		taskList.Color = *body.Color
 	}
 
-	return c.JSON(http.StatusOK, OK(board))
+	if err := api.store.TaskLists.Update(taskList); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, OK(taskList))
+}
+
+func (api *APIService) deleteTaskList(c echo.Context) error {
+	id := c.Param("id")
+
+	if err := api.store.TaskLists.Delete(id); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return echo.ErrNotFound
+		}
+
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
 }

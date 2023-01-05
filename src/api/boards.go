@@ -94,7 +94,7 @@ func (api *APIService) editBoard(c echo.Context) error {
 		board.CoverURL = *body.CoverURL
 	}
 
-	if err = api.store.Boards.Edit(board); err != nil {
+	if err = api.store.Boards.Update(board); err != nil {
 		return err
 	}
 

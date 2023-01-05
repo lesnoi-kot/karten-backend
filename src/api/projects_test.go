@@ -10,35 +10,16 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-	"go.uber.org/zap"
 
-	"github.com/lesnoi-kot/karten-backend/src/api"
 	"github.com/lesnoi-kot/karten-backend/src/store"
 )
 
-type mockProjectsStore struct {
-	mock.Mock
-}
-
 type projectsSuite struct {
-	suite.Suite
-	store        *store.Store
-	api          *api.APIService
-	projectsMock *mockProjectsStore
+	baseAPITestSuite
 }
 
-func (suite *projectsSuite) SetupTest() {
-	suite.projectsMock = new(mockProjectsStore)
-	suite.store = &store.Store{
-		DB:       nil,
-		Projects: suite.projectsMock,
-		Boards:   nil,
-	}
-	suite.api = api.NewAPI(api.APIConfig{
-		Store:     suite.store,
-		Logger:    zap.NewNop().Sugar(),
-		APIPrefix: "",
-	})
+func TestProjects(t *testing.T) {
+	suite.Run(t, new(projectsSuite))
 }
 
 func (s *projectsSuite) TestGetProjects() {
@@ -129,10 +110,15 @@ func (s *projectsSuite) TestAddProject() {
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		rec := httptest.NewRecorder()
 
-		s.projectsMock.On("Add", "Unit-test").Return(
-			&store.Project{ID: "new-id", Name: "Unit-test"},
-			nil,
-		).Once()
+		s.projectsMock.
+			On("Add", mock.Anything).
+			Run(func(args mock.Arguments) {
+				project := args.Get(0).(*store.Project)
+				project.ID = "new-id"
+			}).
+			Return(nil).
+			Once()
+
 		s.api.Server().Handler.ServeHTTP(rec, req)
 
 		s.Equal(http.StatusOK, rec.Code)
@@ -178,10 +164,17 @@ func (s *projectsSuite) TestEditProject() {
 		req := httptest.NewRequest(http.MethodPatch, "/projects/111", strings.NewReader(`{"name":"New"}`))
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		rec := httptest.NewRecorder()
+
 		s.projectsMock.
-			On("Edit", store.EditProjectArgs{ID: "111", Name: "New"}).
-			Return(&store.Project{ID: "111", Name: "New"}, nil).
+			On("Get", "111").
+			Return(&store.Project{ID: "111", Name: "KEKW"}, nil).
 			Once()
+
+		s.projectsMock.
+			On("Update", mock.Anything).
+			Return(nil).
+			Once()
+
 		s.api.Server().Handler.ServeHTTP(rec, req)
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
@@ -198,44 +191,17 @@ func (s *projectsSuite) TestEditProject() {
 		s.Equal(http.StatusBadRequest, rec.Code)
 	})
 
-	s.Run("400", func() {
+	s.Run("404", func() {
 		req := httptest.NewRequest(http.MethodPatch, "/projects/111", strings.NewReader(`{"name":"x"}`))
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 		rec := httptest.NewRecorder()
+
 		s.projectsMock.
-			On("Edit", store.EditProjectArgs{ID: "111", Name: "x"}).
+			On("Get", "111").
 			Return((*store.Project)(nil), store.ErrNotFound).
 			Once()
+
 		s.api.Server().Handler.ServeHTTP(rec, req)
 		s.Equal(http.StatusNotFound, rec.Code)
 	})
-}
-
-func TestProjects(t *testing.T) {
-	suite.Run(t, new(projectsSuite))
-}
-
-func (m mockProjectsStore) Get(id string) (*store.Project, error) {
-	args := m.Called(id)
-	return args.Get(0).(*store.Project), args.Error(1)
-}
-
-func (m mockProjectsStore) GetAll() ([]*store.Project, error) {
-	args := m.Called()
-	return args.Get(0).([]*store.Project), args.Error(1)
-}
-
-func (m mockProjectsStore) Add(name string) (*store.Project, error) {
-	args := m.Called(name)
-	return args.Get(0).(*store.Project), args.Error(1)
-}
-
-func (m mockProjectsStore) Edit(a store.EditProjectArgs) (*store.Project, error) {
-	args := m.Called(a)
-	return args.Get(0).(*store.Project), args.Error(1)
-}
-
-func (m mockProjectsStore) Delete(id string) error {
-	args := m.Called(id)
-	return args.Error(0)
 }

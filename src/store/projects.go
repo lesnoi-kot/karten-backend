@@ -35,8 +35,7 @@ func (s ProjectsStore) Get(id string) (*Project, error) {
 func (s ProjectsStore) GetAll() ([]*Project, error) {
 	var projects []*Project
 
-	err := s.db.
-		NewSelect().
+	err := s.db.NewSelect().
 		Model(&projects).
 		Scan(context.Background())
 	if err != nil {
@@ -46,45 +45,39 @@ func (s ProjectsStore) GetAll() ([]*Project, error) {
 	return projects, nil
 }
 
-func (s ProjectsStore) Add(name string) (*Project, error) {
-	project := &Project{Name: name}
-
+func (s ProjectsStore) Add(project *Project) error {
 	_, err := s.db.NewInsert().
 		Model(project).
 		Column("name").
 		Returning("*").
 		Exec(context.Background())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return project, nil
+	return nil
 }
 
-func (s ProjectsStore) Edit(args EditProjectArgs) (*Project, error) {
-	project := &Project{Name: args.Name}
-
-	result, err := s.db.
-		NewUpdate().
+func (s ProjectsStore) Update(project *Project) error {
+	result, err := s.db.NewUpdate().
 		Model(&project).
 		Column("name").
-		Where("id = ?", args.ID).
+		Where("id = ?", project.ID).
 		Returning("*").
 		Exec(context.Background())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if affected, err := result.RowsAffected(); err == nil && affected == 0 {
-		return nil, ErrNotFound
+	if noRowsAffected(result) {
+		return ErrNotFound
 	}
 
-	return project, nil
+	return nil
 }
 
 func (s ProjectsStore) Delete(id string) error {
-	result, err := s.db.
-		NewDelete().
+	result, err := s.db.NewDelete().
 		Model((*Project)(nil)).
 		Where("id = ?", id).
 		Exec(context.Background())

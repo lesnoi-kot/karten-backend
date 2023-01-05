@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/lesnoi-kot/karten-backend/src/store"
@@ -40,12 +41,15 @@ func (api *APIService) addProject(c echo.Context) error {
 	if err := c.Bind(&body); err != nil {
 		return echo.ErrBadRequest
 	}
+
+	body.Name = strings.TrimSpace(body.Name)
 	if err := c.Validate(&body); err != nil {
 		return echo.ErrBadRequest
 	}
 
-	project, err := api.store.Projects.Add(body.Name)
-	if err != nil {
+	project := &store.Project{Name: body.Name}
+
+	if err := api.store.Projects.Add(project); err != nil {
 		return err
 	}
 
@@ -67,8 +71,6 @@ func (api *APIService) deleteProject(c echo.Context) error {
 }
 
 func (api *APIService) editProject(c echo.Context) error {
-	id := c.Param("id")
-
 	var body struct {
 		Name string `json:"name" validate:"required,min=1,max=32"`
 	}
@@ -80,15 +82,18 @@ func (api *APIService) editProject(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
-	project, err := api.store.Projects.Edit(store.EditProjectArgs{
-		ID:   id,
-		Name: body.Name,
-	})
+	id := c.Param("id")
+	project, err := api.store.Projects.Get(id)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return echo.ErrNotFound
 		}
 
+		return err
+	}
+
+	project.Name = body.Name
+	if err := api.store.Projects.Update(project); err != nil {
 		return err
 	}
 

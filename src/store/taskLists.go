@@ -8,17 +8,18 @@ import (
 	"github.com/uptrace/bun"
 )
 
-type BoardsStore struct {
+type TaskListsStore struct {
 	db *bun.DB
 }
 
-func (s BoardsStore) Get(id string) (*Board, error) {
-	board := new(Board)
+func (s TaskListsStore) Get(id string) (*TaskList, error) {
+	taskList := new(TaskList)
 
 	err := s.db.
 		NewSelect().
-		Model(&board).
+		Model(taskList).
 		Where("id = ?", id).
+		Relation("Tasks").
 		Scan(context.Background())
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -28,28 +29,25 @@ func (s BoardsStore) Get(id string) (*Board, error) {
 		return nil, err
 	}
 
-	return board, nil
+	return taskList, nil
 }
 
-func (s BoardsStore) Add(board *Board) error {
+func (s TaskListsStore) Add(item *TaskList) error {
 	_, err := s.db.
 		NewInsert().
-		Model(board).
-		Column("project_id", "name", "color", "cover_url").
+		Model(item).
+		Column("board_id", "name", "color", "position").
 		Returning("*").
 		Exec(context.Background())
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
-func (s BoardsStore) Update(board *Board) error {
+func (s TaskListsStore) Update(item *TaskList) error {
 	result, err := s.db.NewUpdate().
-		Model(board).
-		Column("name", "archived", "color", "cover_url").
-		Where("id = ?", board.ID).
+		Model(item).
+		Column("name").
+		Where("id = ?", item.ID).
 		Returning("*").
 		Exec(context.Background())
 	if err != nil {
@@ -63,10 +61,10 @@ func (s BoardsStore) Update(board *Board) error {
 	return nil
 }
 
-func (s BoardsStore) Delete(id string) error {
+func (s TaskListsStore) Delete(id string) error {
 	result, err := s.db.
 		NewDelete().
-		Model((*Board)(nil)).
+		Model((*TaskList)(nil)).
 		Where("id = ?", id).
 		Exec(context.Background())
 	if err != nil {

@@ -15,26 +15,26 @@ import (
 
 var ErrNotFound = errors.New("resource not found")
 
-type EditProjectArgs struct {
-	ID   string
-	Name string
+type Repo[T any] interface {
+	Get(id string) (*T, error)
+	Add(item *T) error
+	Update(item *T) error
+	Delete(id string) error
 }
 
 type Store struct {
 	*bun.DB
 
 	Projects interface {
-		Get(id string) (*Project, error)
+		Repo[Project]
+
 		GetAll() ([]*Project, error)
-		Add(name string) (*Project, error)
-		Edit(args EditProjectArgs) (*Project, error)
-		Delete(id string) error
 	}
 	Boards interface {
-		Get(id string) (*Board, error)
-		Add(board *Board) error
-		Edit(board *Board) error
-		Delete(id string) error
+		Repo[Board]
+	}
+	TaskLists interface {
+		Repo[TaskList]
 	}
 }
 
@@ -62,9 +62,10 @@ func NewStore(c StoreConfig) (*Store, error) {
 	}
 
 	store := &Store{
-		DB:       db,
-		Projects: &ProjectsStore{db},
-		Boards:   nil,
+		DB:        db,
+		Projects:  &ProjectsStore{db},
+		Boards:    &BoardsStore{db},
+		TaskLists: &TaskListsStore{db},
 	}
 
 	return store, nil

@@ -5,41 +5,19 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/lesnoi-kot/karten-backend/src/api"
 	"github.com/lesnoi-kot/karten-backend/src/store"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-	"go.uber.org/zap"
 )
 
-var testDate = time.Unix(0, 0).UTC()
-
-type mockBoardsStore struct {
-	mock.Mock
-}
-
 type boardsSuite struct {
-	suite.Suite
-	store      *store.Store
-	api        *api.APIService
-	boardsMock *mockBoardsStore
+	baseAPITestSuite
 }
 
-func (suite *boardsSuite) SetupTest() {
-	suite.boardsMock = new(mockBoardsStore)
-	suite.store = &store.Store{
-		DB:       nil,
-		Projects: nil,
-		Boards:   suite.boardsMock,
-	}
-	suite.api = api.NewAPI(api.APIConfig{
-		Store:     suite.store,
-		Logger:    zap.NewNop().Sugar(),
-		APIPrefix: "",
-	})
+func TestBoards(t *testing.T) {
+	suite.Run(t, new(boardsSuite))
 }
 
 func (s *boardsSuite) TestGetBoard() {
@@ -186,7 +164,7 @@ func (s *boardsSuite) TestEditBoard() {
 			nil,
 		).Once()
 
-		s.boardsMock.On("Edit", mock.Anything).Return(nil).Once()
+		s.boardsMock.On("Update", mock.Anything).Return(nil).Once()
 
 		s.api.Server().Handler.ServeHTTP(rec, req)
 		s.Equal(http.StatusOK, rec.Code)
@@ -233,7 +211,7 @@ func (s *boardsSuite) TestEditBoard() {
 			nil,
 		).Once()
 
-		s.boardsMock.On("Edit", mock.Anything).Return(nil).Once()
+		s.boardsMock.On("Update", mock.Anything).Return(nil).Once()
 
 		s.api.Server().Handler.ServeHTTP(rec, req)
 		s.Equal(http.StatusOK, rec.Code)
@@ -283,28 +261,4 @@ func (s *boardsSuite) TestDeleteBoard() {
 		s.api.Server().Handler.ServeHTTP(rec, req)
 		s.Equal(http.StatusNotFound, rec.Code)
 	})
-}
-
-func TestBoards(t *testing.T) {
-	suite.Run(t, new(boardsSuite))
-}
-
-func (m mockBoardsStore) Get(id string) (*store.Board, error) {
-	args := m.Called(id)
-	return args.Get(0).(*store.Board), args.Error(1)
-}
-
-func (m mockBoardsStore) Add(a *store.Board) error {
-	args := m.Called(a)
-	return args.Error(0)
-}
-
-func (m mockBoardsStore) Edit(a *store.Board) error {
-	args := m.Called(a)
-	return args.Error(0)
-}
-
-func (m mockBoardsStore) Delete(id string) error {
-	args := m.Called(id)
-	return args.Error(0)
 }
