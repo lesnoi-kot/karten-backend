@@ -1,10 +1,9 @@
 package api
 
 import (
-	"context"
-	"database/sql"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -13,17 +12,9 @@ import (
 
 func (api *APIService) getTask(c echo.Context) error {
 	id := c.Param("id")
-
-	var task store.Task
-
-	err := api.store.
-		NewSelect().
-		Model(&task).
-		Where("id = ?", id).
-		Relation("Comments").
-		Scan(context.Background())
+	task, err := api.store.Tasks.Get(id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, store.ErrNotFound) {
 			return echo.ErrNotFound
 		}
 
@@ -37,33 +28,83 @@ func (api *APIService) addTask(c echo.Context) error {
 	taskListID := c.Param("id")
 
 	var body struct {
-		Name     string `json:"name" validate:"required,min=1,max=32"`
-		Text     string `json:"text"`
-		Position int64  `json:"position"`
-		DueDate  string `json:"due_date" validate:"datetime="`
+		Name     string     `json:"name" validate:"required,min=1,max=32"`
+		Text     string     `json:"text"`
+		Position int64      `json:"position"`
+		DueDate  *time.Time `json:"due_date"`
 	}
 
 	if err := c.Bind(&body); err != nil {
 		return echo.ErrBadRequest
 	}
 
-	dueDate, _ := time.Parse("", body.DueDate)
+	body.Name = strings.TrimSpace(body.Name)
+	if err := c.Validate(&body); err != nil {
+		return echo.ErrBadRequest
+	}
 
-	task := store.Task{
+	task := &store.Task{
 		TaskListID: taskListID,
 		Name:       body.Name,
 		Text:       body.Text,
 		Position:   body.Position,
-		DueDate:    dueDate,
+		DueDate:    body.DueDate,
 	}
 
-	_, err := api.store.
-		NewInsert().
-		Model(&task).
-		Column("task_list_id", "name", "text", "position", "due_date").
-		Returning("*").
-		Exec(context.Background())
+	if err := api.store.Tasks.Add(task); err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, OK(task))
+}
+
+func (api *APIService) editTask(c echo.Context) error {
+	var body struct {
+		TaskListID *string    `json:"task_list_id"`
+		Name       *string    `json:"name" validate:"min=1,max=32"`
+		Text       *string    `json:"text"`
+		Position   *int64     `json:"position"`
+		DueDate    *time.Time `json:"due_date"`
+	}
+
+	if err := c.Bind(&body); err != nil {
+		return echo.ErrBadRequest
+	}
+
+	if body.Name != nil {
+		*body.Name = strings.TrimSpace(*body.Name)
+	}
+	if err := c.Validate(&body); err != nil {
+		return echo.ErrBadRequest
+	}
+
+	id := c.Param("id")
+	task, err := api.store.Tasks.Get(id)
 	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return echo.ErrNotFound
+		}
+
+		return err
+	}
+
+	if body.Name != nil {
+		task.Name = *body.Name
+	}
+	if body.Text != nil {
+		task.Text = *body.Text
+	}
+	if body.Position != nil {
+		task.Position = *body.Position
+	}
+	if body.DueDate != nil {
+		task.DueDate = body.DueDate
+	}
+	if body.TaskListID != nil {
+		task.TaskListID = *body.TaskListID
+	}
+
+	if err := api.store.Tasks.Update(task); err != nil {
 		return err
 	}
 
@@ -73,22 +114,13 @@ func (api *APIService) addTask(c echo.Context) error {
 func (api *APIService) deleteTask(c echo.Context) error {
 	id := c.Param("id")
 
-	result, err := api.store.
-		NewDelete().
-		Model((*store.Task)(nil)).
-		Where("id = ?", id).
-		Exec(context.Background())
-	if err != nil {
+	if err := api.store.Tasks.Delete(id); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			return echo.ErrNotFound
+		}
+
 		return err
 	}
 
-	if affected, err := result.RowsAffected(); err == nil && affected == 0 {
-		return echo.ErrNotFound
-	}
-
-	return c.JSON(http.StatusOK, OK(nil))
-}
-
-func (api *APIService) editTask(c echo.Context) error {
-	return nil
+	return c.NoContent(http.StatusNoContent)
 }

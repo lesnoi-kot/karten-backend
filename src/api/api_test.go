@@ -16,6 +16,7 @@ type (
 	mockBoardsStore    struct{ mock.Mock }
 	mockProjectsStore  struct{ mock.Mock }
 	mockTaskListsStore struct{ mock.Mock }
+	mockTasksStore     struct{ mock.Mock }
 )
 
 type baseAPITestSuite struct {
@@ -27,18 +28,21 @@ type baseAPITestSuite struct {
 	projectsMock  *mockProjectsStore
 	boardsMock    *mockBoardsStore
 	taskListsMock *mockTaskListsStore
+	tasksMock     *mockTasksStore
 }
 
 func (suite *baseAPITestSuite) init() {
 	suite.projectsMock = new(mockProjectsStore)
 	suite.boardsMock = new(mockBoardsStore)
 	suite.taskListsMock = new(mockTaskListsStore)
+	suite.tasksMock = new(mockTasksStore)
 
 	suite.store = &store.Store{
 		DB:        nil,
 		Projects:  suite.projectsMock,
 		Boards:    suite.boardsMock,
 		TaskLists: suite.taskListsMock,
+		Tasks:     suite.tasksMock,
 	}
 	suite.api = api.NewAPI(api.APIConfig{
 		Store:     suite.store,
@@ -82,13 +86,13 @@ func (m mockProjectsStore) GetAll() ([]*store.Project, error) {
 	return args.Get(0).([]*store.Project), args.Error(1)
 }
 
-func (m mockProjectsStore) Add(project *store.Project) error {
-	args := m.Called(project)
+func (m mockProjectsStore) Add(item *store.Project) error {
+	args := m.Called(item)
 	return args.Error(0)
 }
 
-func (m mockProjectsStore) Update(project *store.Project) error {
-	args := m.Called(project)
+func (m mockProjectsStore) Update(item *store.Project) error {
+	args := m.Called(item)
 	return args.Error(0)
 }
 
@@ -102,17 +106,37 @@ func (m mockTaskListsStore) Get(id string) (*store.TaskList, error) {
 	return args.Get(0).(*store.TaskList), args.Error(1)
 }
 
-func (m mockTaskListsStore) Add(project *store.TaskList) error {
-	args := m.Called(project)
+func (m mockTaskListsStore) Add(item *store.TaskList) error {
+	args := m.Called(item)
 	return args.Error(0)
 }
 
-func (m mockTaskListsStore) Update(project *store.TaskList) error {
-	args := m.Called(project)
+func (m mockTaskListsStore) Update(item *store.TaskList) error {
+	args := m.Called(item)
 	return args.Error(0)
 }
 
 func (m mockTaskListsStore) Delete(id string) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m mockTasksStore) Get(id string) (*store.Task, error) {
+	args := m.Called(id)
+	return args.Get(0).(*store.Task), args.Error(1)
+}
+
+func (m mockTasksStore) Add(item *store.Task) error {
+	args := m.Called(item)
+	return args.Error(0)
+}
+
+func (m mockTasksStore) Update(item *store.Task) error {
+	args := m.Called(item)
+	return args.Error(0)
+}
+
+func (m mockTasksStore) Delete(id string) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
