@@ -36,11 +36,11 @@ type Board struct {
 type Comment struct {
 	bun.BaseModel `bun:"table:comments"`
 
-	ID          string `bun:",pk"`
-	TaskID      string
-	Author      string
-	Text        string
-	DateCreated time.Time
+	ID          string    `bun:",pk" json:"id"`
+	TaskID      string    `json:"task_id"`
+	Author      string    `json:"author"`
+	Text        string    `json:"text"`
+	DateCreated time.Time `json:"date_created"`
 }
 
 type Project struct {

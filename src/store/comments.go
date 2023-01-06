@@ -8,16 +8,16 @@ import (
 	"github.com/uptrace/bun"
 )
 
-type ProjectsStore struct {
+type CommentsStore struct {
 	db *bun.DB
 }
 
-func (s ProjectsStore) Get(id string) (*Project, error) {
-	project := new(Project)
+func (s *CommentsStore) Get(id string) (*Comment, error) {
+	comment := new(Comment)
 
 	err := s.db.
 		NewSelect().
-		Model(project).
+		Model(comment).
 		Where("id = ?", id).
 		Relation("Boards").
 		Scan(context.Background())
@@ -29,40 +29,26 @@ func (s ProjectsStore) Get(id string) (*Project, error) {
 		return nil, err
 	}
 
-	return project, nil
+	return comment, nil
 }
 
-func (s ProjectsStore) GetAll() ([]*Project, error) {
-	var projects []*Project
-
-	err := s.db.NewSelect().
-		Model(&projects).
-		Scan(context.Background())
-	if err != nil {
-		return nil, err
-	}
-
-	return projects, nil
-}
-
-func (s ProjectsStore) Add(project *Project) error {
+func (s *CommentsStore) Add(item *Comment) error {
 	_, err := s.db.NewInsert().
-		Model(project).
-		Column("name").
+		Model(item).
+		Column("task_id", "text", "author").
 		Returning("*").
 		Exec(context.Background())
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func (s ProjectsStore) Update(project *Project) error {
+func (s *CommentsStore) Update(item *Comment) error {
 	result, err := s.db.NewUpdate().
-		Model(project).
-		Column("name").
-		Where("id = ?", project.ID).
+		Model(item).
+		Column("text").
+		Where("id = ?", item.ID).
 		Returning("*").
 		Exec(context.Background())
 	if err != nil {
@@ -76,9 +62,9 @@ func (s ProjectsStore) Update(project *Project) error {
 	return nil
 }
 
-func (s ProjectsStore) Delete(id string) error {
+func (s *CommentsStore) Delete(id string) error {
 	result, err := s.db.NewDelete().
-		Model((*Project)(nil)).
+		Model((*Comment)(nil)).
 		Where("id = ?", id).
 		Exec(context.Background())
 	if err != nil {

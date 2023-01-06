@@ -17,7 +17,7 @@ func (s BoardsStore) Get(id string) (*Board, error) {
 
 	err := s.db.
 		NewSelect().
-		Model(&board).
+		Model(board).
 		Where("id = ?", id).
 		Scan(context.Background())
 	if err != nil {

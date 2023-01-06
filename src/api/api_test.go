@@ -17,6 +17,7 @@ type (
 	mockProjectsStore  struct{ mock.Mock }
 	mockTaskListsStore struct{ mock.Mock }
 	mockTasksStore     struct{ mock.Mock }
+	mockCommentsStore  struct{ mock.Mock }
 )
 
 type baseAPITestSuite struct {
@@ -29,6 +30,7 @@ type baseAPITestSuite struct {
 	boardsMock    *mockBoardsStore
 	taskListsMock *mockTaskListsStore
 	tasksMock     *mockTasksStore
+	commentsMock  *mockCommentsStore
 }
 
 func (suite *baseAPITestSuite) init() {
@@ -36,6 +38,7 @@ func (suite *baseAPITestSuite) init() {
 	suite.boardsMock = new(mockBoardsStore)
 	suite.taskListsMock = new(mockTaskListsStore)
 	suite.tasksMock = new(mockTasksStore)
+	suite.commentsMock = new(mockCommentsStore)
 
 	suite.store = &store.Store{
 		DB:        nil,
@@ -43,6 +46,7 @@ func (suite *baseAPITestSuite) init() {
 		Boards:    suite.boardsMock,
 		TaskLists: suite.taskListsMock,
 		Tasks:     suite.tasksMock,
+		Comments:  suite.commentsMock,
 	}
 	suite.api = api.NewAPI(api.APIConfig{
 		Store:     suite.store,
@@ -137,6 +141,26 @@ func (m mockTasksStore) Update(item *store.Task) error {
 }
 
 func (m mockTasksStore) Delete(id string) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
+func (m mockCommentsStore) Get(id string) (*store.Comment, error) {
+	args := m.Called(id)
+	return args.Get(0).(*store.Comment), args.Error(1)
+}
+
+func (m mockCommentsStore) Add(item *store.Comment) error {
+	args := m.Called(item)
+	return args.Error(0)
+}
+
+func (m mockCommentsStore) Update(item *store.Comment) error {
+	args := m.Called(item)
+	return args.Error(0)
+}
+
+func (m mockCommentsStore) Delete(id string) error {
 	args := m.Called(id)
 	return args.Error(0)
 }

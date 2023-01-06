@@ -39,6 +39,9 @@ type Store struct {
 	Tasks interface {
 		Repo[Task]
 	}
+	Comments interface {
+		Repo[Comment]
+	}
 }
 
 type StoreConfig struct {
@@ -70,6 +73,7 @@ func NewStore(c StoreConfig) (*Store, error) {
 		Boards:    &BoardsStore{db},
 		TaskLists: &TaskListsStore{db},
 		Tasks:     &TasksStore{db},
+		Comments:  &CommentsStore{db},
 	}
 
 	return store, nil
