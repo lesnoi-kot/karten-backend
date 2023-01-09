@@ -19,6 +19,7 @@ func (s BoardsStore) Get(id string) (*Board, error) {
 		NewSelect().
 		Model(board).
 		Where("id = ?", id).
+		Relation("TaskLists").
 		Scan(context.Background())
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

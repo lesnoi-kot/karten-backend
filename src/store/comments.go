@@ -19,7 +19,6 @@ func (s *CommentsStore) Get(id string) (*Comment, error) {
 		NewSelect().
 		Model(comment).
 		Where("id = ?", id).
-		Relation("Boards").
 		Scan(context.Background())
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

@@ -33,16 +33,6 @@ type Board struct {
 	TaskLists []*TaskList `bun:"rel:has-many,join:id=board_id" json:"task_lists,omitempty"`
 }
 
-type Comment struct {
-	bun.BaseModel `bun:"table:comments"`
-
-	ID          string    `bun:",pk" json:"id"`
-	TaskID      string    `json:"task_id"`
-	Author      string    `json:"author"`
-	Text        string    `json:"text"`
-	DateCreated time.Time `json:"date_created"`
-}
-
 type Project struct {
 	bun.BaseModel `bun:"table:projects"`
 
@@ -60,6 +50,7 @@ type Task struct {
 	Name        string     `json:"name"`
 	Text        string     `json:"text"`
 	Position    int64      `json:"position"`
+	Archived    bool       `json:"archived"`
 	DateCreated time.Time  `json:"date_created"`
 	DueDate     *time.Time `bun:"due_date,nullzero" json:"due_date"`
 
@@ -78,4 +69,14 @@ type TaskList struct {
 	Color       Color     `json:"color"`
 
 	Tasks []*Task `bun:"rel:has-many,join:id=task_list_id" json:"tasks,omitempty"`
+}
+
+type Comment struct {
+	bun.BaseModel `bun:"table:comments"`
+
+	ID          string    `bun:",pk" json:"id"`
+	TaskID      string    `json:"task_id"`
+	Author      string    `json:"author"`
+	Text        string    `json:"text"`
+	DateCreated time.Time `json:"date_created"`
 }

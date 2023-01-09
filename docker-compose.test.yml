@@ -1,0 +1,25 @@
+services:
+  karten-intergation-tests:
+    image: golang:1.19.4
+    command: go test "github.com/lesnoi-kot/karten-backend/src/store"
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      STORE_DSN: postgres://tester:tester@karten-test-db:5432/test?sslmode=disable&search_path=karten
+    depends_on:
+      - karten-test-db
+
+  karten-test-db:
+    image: postgres:15.1-alpine
+    logging:
+      driver: "none"
+    environment:
+      POSTGRES_USER: tester
+      POSTGRES_PASSWORD: tester
+      POSTGRES_DB: test
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/01_init.sql
+      - ./src/store/testdata/test_fixtures.sql:/docker-entrypoint-initdb.d/02_fixtures.sql
+    ports:
+      - 127.0.0.1:5432:5432

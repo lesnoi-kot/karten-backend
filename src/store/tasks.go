@@ -49,7 +49,7 @@ func (s *TasksStore) Add(task *Task) error {
 func (s *TasksStore) Update(task *Task) error {
 	result, err := s.db.NewUpdate().
 		Model(task).
-		Column("task_list_id", "name", "text", "position", "due_date").
+		Column("task_list_id", "name", "text", "position", "due_date", "archived").
 		Where("id = ?", task.ID).
 		Returning("*").
 		Exec(context.Background())
