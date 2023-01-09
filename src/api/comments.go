@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -30,7 +31,7 @@ func (api *APIService) addComment(c echo.Context) error {
 		Text:   body.Text,
 	}
 
-	if err := api.store.Comments.Add(comment); err != nil {
+	if err := api.store.Comments.Add(context.Background(), comment); err != nil {
 		return err
 	}
 
@@ -52,7 +53,7 @@ func (api *APIService) editComment(c echo.Context) error {
 	}
 
 	id := c.Param("id")
-	comment, err := api.store.Comments.Get(id)
+	comment, err := api.store.Comments.Get(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return echo.ErrNotFound
@@ -62,7 +63,7 @@ func (api *APIService) editComment(c echo.Context) error {
 	}
 
 	comment.Text = body.Text
-	if err := api.store.Comments.Update(comment); err != nil {
+	if err := api.store.Comments.Update(context.Background(), comment); err != nil {
 		return err
 	}
 
@@ -72,7 +73,7 @@ func (api *APIService) editComment(c echo.Context) error {
 func (api *APIService) deleteComment(c echo.Context) error {
 	id := c.Param("id")
 
-	if err := api.store.Comments.Delete(id); err != nil {
+	if err := api.store.Comments.Delete(context.Background(), id); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return echo.ErrNotFound
 		}

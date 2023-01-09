@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -12,7 +13,7 @@ import (
 
 func (api *APIService) getTask(c echo.Context) error {
 	id := c.Param("id")
-	task, err := api.store.Tasks.Get(id)
+	task, err := api.store.Tasks.Get(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return echo.ErrNotFound
@@ -51,7 +52,7 @@ func (api *APIService) addTask(c echo.Context) error {
 		DueDate:    body.DueDate,
 	}
 
-	if err := api.store.Tasks.Add(task); err != nil {
+	if err := api.store.Tasks.Add(context.Background(), task); err != nil {
 		return err
 	}
 
@@ -79,7 +80,7 @@ func (api *APIService) editTask(c echo.Context) error {
 	}
 
 	id := c.Param("id")
-	task, err := api.store.Tasks.Get(id)
+	task, err := api.store.Tasks.Get(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return echo.ErrNotFound
@@ -104,7 +105,7 @@ func (api *APIService) editTask(c echo.Context) error {
 		task.TaskListID = *body.TaskListID
 	}
 
-	if err := api.store.Tasks.Update(task); err != nil {
+	if err := api.store.Tasks.Update(context.Background(), task); err != nil {
 		return err
 	}
 
@@ -114,7 +115,7 @@ func (api *APIService) editTask(c echo.Context) error {
 func (api *APIService) deleteTask(c echo.Context) error {
 	id := c.Param("id")
 
-	if err := api.store.Tasks.Delete(id); err != nil {
+	if err := api.store.Tasks.Delete(context.Background(), id); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return echo.ErrNotFound
 		}

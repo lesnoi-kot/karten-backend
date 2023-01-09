@@ -1,6 +1,7 @@
 package store_test
 
 import (
+	"context"
 	"os"
 	"testing"
 	"time"
@@ -40,7 +41,7 @@ func (s *storeSuite) SetupTest() {
 
 func (s *storeSuite) TestProjectsStore() {
 	s.Run("GetAll", func() {
-		all, err := s.store.Projects.GetAll()
+		all, err := s.store.Projects.GetAll(context.Background())
 
 		s.Require().NoError(err)
 
@@ -69,7 +70,7 @@ func (s *storeSuite) TestProjectsStore() {
 	})
 
 	s.Run("Get", func() {
-		project, err := s.store.Projects.Get("fd5f451d-fac6-4bc7-a677-34adb39a6701")
+		project, err := s.store.Projects.Get(context.Background(), "fd5f451d-fac6-4bc7-a677-34adb39a6701")
 		s.Require().NoError(err)
 
 		expected := &store.Project{
@@ -123,7 +124,7 @@ func (s *storeSuite) TestProjectsStore() {
 	})
 
 	s.Run("Get", func() {
-		project, err := s.store.Projects.Get("2f146153-ee2f-4968-a241-11a4f00bf212")
+		project, err := s.store.Projects.Get(context.Background(), "2f146153-ee2f-4968-a241-11a4f00bf212")
 		s.Require().NoError(err)
 
 		expected := &store.Project{
@@ -157,14 +158,14 @@ func (s *storeSuite) TestProjectsStore() {
 	})
 
 	s.Run("Get - not found", func() {
-		actual, err := s.store.Projects.Get("0ee97545-1d21-4b10-bd58-65e1682b9ec1")
+		actual, err := s.store.Projects.Get(context.Background(), "0ee97545-1d21-4b10-bd58-65e1682b9ec1")
 		s.ErrorIs(err, store.ErrNotFound)
 		s.Nil(actual)
 	})
 
 	s.Run("Add -> Update -> Delete", func() {
 		project := &store.Project{Name: "New test"}
-		err := s.store.Projects.Add(project)
+		err := s.store.Projects.Add(context.Background(), project)
 
 		s.Require().NoError(err)
 		s.Equal("New test", project.Name)
@@ -172,23 +173,23 @@ func (s *storeSuite) TestProjectsStore() {
 		s.Nil(project.Boards)
 
 		{
-			all, err := s.store.Projects.GetAll()
+			all, err := s.store.Projects.GetAll(context.Background())
 			s.Require().NoError(err)
 			s.Len(all, 5)
 		}
 
 		project.Name = "Updated"
-		err = s.store.Projects.Update(project)
+		err = s.store.Projects.Update(context.Background(), project)
 		s.Require().NoError(err)
 
-		project, err = s.store.Projects.Get(project.ID)
+		project, err = s.store.Projects.Get(context.Background(), project.ID)
 		s.Require().NoError(err)
 		s.Equal("Updated", project.Name)
 
-		err = s.store.Projects.Delete(project.ID)
+		err = s.store.Projects.Delete(context.Background(), project.ID)
 		s.Require().NoError(err)
 
-		project, err = s.store.Projects.Get(project.ID)
+		project, err = s.store.Projects.Get(context.Background(), project.ID)
 		s.ErrorIs(err, store.ErrNotFound)
 		s.Nil(project)
 	})
@@ -196,7 +197,7 @@ func (s *storeSuite) TestProjectsStore() {
 
 func (s *storeSuite) TestBoardsStore() {
 	s.Run("Get", func() {
-		actual, err := s.store.Boards.Get("29e247c3-69f1-4397-8bab-b1dd10ae28b2")
+		actual, err := s.store.Boards.Get(context.Background(), "29e247c3-69f1-4397-8bab-b1dd10ae28b2")
 		s.Require().NoError(err)
 
 		expected := &store.Board{
@@ -246,14 +247,14 @@ func (s *storeSuite) TestBoardsStore() {
 	})
 
 	s.Run("Get - not found", func() {
-		actual, err := s.store.Boards.Get("0ee97545-1d21-4b10-bd58-65e1682b9ec1")
+		actual, err := s.store.Boards.Get(context.Background(), "0ee97545-1d21-4b10-bd58-65e1682b9ec1")
 		s.ErrorIs(err, store.ErrNotFound)
 		s.Nil(actual)
 	})
 
 	s.Run("Add -> Update -> Delete", func() {
 		board := &store.Board{Name: "New test", ProjectID: "fd5f451d-fac6-4bc7-a677-34adb39a6701"}
-		err := s.store.Boards.Add(board)
+		err := s.store.Boards.Add(context.Background(), board)
 
 		s.Require().NoError(err)
 		s.Equal("New test", board.Name)
@@ -264,23 +265,23 @@ func (s *storeSuite) TestBoardsStore() {
 		s.Nil(board.TaskLists)
 
 		{
-			project, err := s.store.Projects.Get("fd5f451d-fac6-4bc7-a677-34adb39a6701")
+			project, err := s.store.Projects.Get(context.Background(), "fd5f451d-fac6-4bc7-a677-34adb39a6701")
 			s.Require().NoError(err)
 			s.Len(project.Boards, 5)
 		}
 
 		board.Name = "Updated"
-		err = s.store.Boards.Update(board)
+		err = s.store.Boards.Update(context.Background(), board)
 		s.Require().NoError(err)
 
-		board, err = s.store.Boards.Get(board.ID)
+		board, err = s.store.Boards.Get(context.Background(), board.ID)
 		s.Require().NoError(err)
 		s.Equal("Updated", board.Name)
 
-		err = s.store.Boards.Delete(board.ID)
+		err = s.store.Boards.Delete(context.Background(), board.ID)
 		s.Require().NoError(err)
 
-		board, err = s.store.Boards.Get(board.ID)
+		board, err = s.store.Boards.Get(context.Background(), board.ID)
 		s.ErrorIs(err, store.ErrNotFound)
 		s.Nil(board)
 	})
@@ -288,7 +289,7 @@ func (s *storeSuite) TestBoardsStore() {
 
 func (s *storeSuite) TestTaskListsStore() {
 	s.Run("Get", func() {
-		actual, err := s.store.TaskLists.Get("93892ed8-bd3d-4f8e-b820-bf9a5043bc1d")
+		actual, err := s.store.TaskLists.Get(context.Background(), "93892ed8-bd3d-4f8e-b820-bf9a5043bc1d")
 		s.Require().NoError(err)
 
 		expected := &store.TaskList{
@@ -323,14 +324,14 @@ func (s *storeSuite) TestTaskListsStore() {
 	})
 
 	s.Run("Get - not found", func() {
-		actual, err := s.store.TaskLists.Get("0ee97545-1d21-4b10-bd58-65e1682b9ec1")
+		actual, err := s.store.TaskLists.Get(context.Background(), "0ee97545-1d21-4b10-bd58-65e1682b9ec1")
 		s.ErrorIs(err, store.ErrNotFound)
 		s.Nil(actual)
 	})
 
 	s.Run("Add -> Update -> Delete", func() {
 		list := &store.TaskList{Name: "New test", BoardID: "29e247c3-69f1-4397-8bab-b1dd10ae28b2"}
-		err := s.store.TaskLists.Add(list)
+		err := s.store.TaskLists.Add(context.Background(), list)
 
 		s.Require().NoError(err)
 		s.Equal("New test", list.Name)
@@ -340,23 +341,23 @@ func (s *storeSuite) TestTaskListsStore() {
 		s.Nil(list.Tasks)
 
 		{
-			project, err := s.store.Boards.Get("29e247c3-69f1-4397-8bab-b1dd10ae28b2")
+			project, err := s.store.Boards.Get(context.Background(), "29e247c3-69f1-4397-8bab-b1dd10ae28b2")
 			s.Require().NoError(err)
 			s.Len(project.TaskLists, 4)
 		}
 
 		list.Name = "Updated"
-		err = s.store.TaskLists.Update(list)
+		err = s.store.TaskLists.Update(context.Background(), list)
 		s.Require().NoError(err)
 
-		list, err = s.store.TaskLists.Get(list.ID)
+		list, err = s.store.TaskLists.Get(context.Background(), list.ID)
 		s.Require().NoError(err)
 		s.Equal("Updated", list.Name)
 
-		err = s.store.TaskLists.Delete(list.ID)
+		err = s.store.TaskLists.Delete(context.Background(), list.ID)
 		s.Require().NoError(err)
 
-		list, err = s.store.TaskLists.Get(list.ID)
+		list, err = s.store.TaskLists.Get(context.Background(), list.ID)
 		s.ErrorIs(err, store.ErrNotFound)
 		s.Nil(list)
 	})
@@ -364,7 +365,7 @@ func (s *storeSuite) TestTaskListsStore() {
 
 func (s *storeSuite) TestTasksStore() {
 	s.Run("Get", func() {
-		actual, err := s.store.Tasks.Get("3a0c9a3b-bbec-4047-9822-1c4806c2a258")
+		actual, err := s.store.Tasks.Get(context.Background(), "3a0c9a3b-bbec-4047-9822-1c4806c2a258")
 		s.Require().NoError(err)
 
 		expected := &store.Task{
@@ -395,7 +396,7 @@ func (s *storeSuite) TestTasksStore() {
 	})
 
 	s.Run("Get - not found", func() {
-		actual, err := s.store.Tasks.Get("0ee97545-1d21-4b10-bd58-65e1682b9ec1")
+		actual, err := s.store.Tasks.Get(context.Background(), "0ee97545-1d21-4b10-bd58-65e1682b9ec1")
 		s.ErrorIs(err, store.ErrNotFound)
 		s.Nil(actual)
 	})
@@ -407,7 +408,7 @@ func (s *storeSuite) TestTasksStore() {
 			TaskListID: "2fcff999-fa20-419b-84b9-023d81a7688e",
 			Position:   777,
 		}
-		err := s.store.Tasks.Add(task)
+		err := s.store.Tasks.Add(context.Background(), task)
 
 		s.Require().NoError(err)
 		s.Equal("New test", task.Name)
@@ -418,25 +419,25 @@ func (s *storeSuite) TestTasksStore() {
 		s.Nil(task.Comments)
 
 		{
-			list, err := s.store.TaskLists.Get("2fcff999-fa20-419b-84b9-023d81a7688e")
+			list, err := s.store.TaskLists.Get(context.Background(), "2fcff999-fa20-419b-84b9-023d81a7688e")
 			s.Require().NoError(err)
 			s.Len(list.Tasks, 2)
 		}
 
 		task.Name = "Updated"
 		task.Text = "yyy"
-		err = s.store.Tasks.Update(task)
+		err = s.store.Tasks.Update(context.Background(), task)
 		s.Require().NoError(err)
 
-		task, err = s.store.Tasks.Get(task.ID)
+		task, err = s.store.Tasks.Get(context.Background(), task.ID)
 		s.Require().NoError(err)
 		s.Equal("Updated", task.Name)
 		s.Equal("yyy", task.Text)
 
-		err = s.store.Tasks.Delete(task.ID)
+		err = s.store.Tasks.Delete(context.Background(), task.ID)
 		s.Require().NoError(err)
 
-		task, err = s.store.Tasks.Get(task.ID)
+		task, err = s.store.Tasks.Get(context.Background(), task.ID)
 		s.ErrorIs(err, store.ErrNotFound)
 		s.Nil(task)
 	})
@@ -444,7 +445,7 @@ func (s *storeSuite) TestTasksStore() {
 
 func (s *storeSuite) TestCommentsStore() {
 	s.Run("Get", func() {
-		actual, err := s.store.Comments.Get("4d715efa-8e2f-4488-99d2-5b69e7a43aec")
+		actual, err := s.store.Comments.Get(context.Background(), "4d715efa-8e2f-4488-99d2-5b69e7a43aec")
 		s.Require().NoError(err)
 
 		expected := &store.Comment{
@@ -459,7 +460,7 @@ func (s *storeSuite) TestCommentsStore() {
 	})
 
 	s.Run("Get - not found", func() {
-		actual, err := s.store.Comments.Get("0ee97545-1d21-4b10-bd58-65e1682b9ec1")
+		actual, err := s.store.Comments.Get(context.Background(), "0ee97545-1d21-4b10-bd58-65e1682b9ec1")
 		s.ErrorIs(err, store.ErrNotFound)
 		s.Nil(actual)
 	})
@@ -469,30 +470,30 @@ func (s *storeSuite) TestCommentsStore() {
 			Text:   "xxx",
 			TaskID: "3a0c9a3b-bbec-4047-9822-1c4806c2a258",
 		}
-		err := s.store.Comments.Add(comment)
+		err := s.store.Comments.Add(context.Background(), comment)
 
 		s.Require().NoError(err)
 		s.Equal("xxx", comment.Text)
 		s.NotEmpty(comment.ID)
 
 		{
-			list, err := s.store.Tasks.Get("3a0c9a3b-bbec-4047-9822-1c4806c2a258")
+			list, err := s.store.Tasks.Get(context.Background(), "3a0c9a3b-bbec-4047-9822-1c4806c2a258")
 			s.Require().NoError(err)
 			s.Len(list.Comments, 3)
 		}
 
 		comment.Text = "yyy"
-		err = s.store.Comments.Update(comment)
+		err = s.store.Comments.Update(context.Background(), comment)
 		s.Require().NoError(err)
 
-		comment, err = s.store.Comments.Get(comment.ID)
+		comment, err = s.store.Comments.Get(context.Background(), comment.ID)
 		s.Require().NoError(err)
 		s.Equal("yyy", comment.Text)
 
-		err = s.store.Comments.Delete(comment.ID)
+		err = s.store.Comments.Delete(context.Background(), comment.ID)
 		s.Require().NoError(err)
 
-		comment, err = s.store.Comments.Get(comment.ID)
+		comment, err = s.store.Comments.Get(context.Background(), comment.ID)
 		s.ErrorIs(err, store.ErrNotFound)
 		s.Nil(comment)
 	})

@@ -47,6 +47,7 @@ func (s *tasksSuite) TestGetTask() {
 				"task_list_id": "111",
 				"name": "Test",
 				"text": "",
+				"archived": false,
 				"position": 333,
 				"date_created": "1970-01-01T00:00:00Z",
 				"due_date": "1970-01-01T00:00:00Z"
@@ -90,6 +91,7 @@ func (s *tasksSuite) TestAddTask() {
 				"task_list_id": "123",
 				"name": "qqq",
 				"text": "looool",
+				"archived": false,
 				"position": 111,
 				"date_created": "1970-01-01T00:00:00Z",
 				"due_date": "1970-01-01T00:00:00Z"
@@ -173,6 +175,7 @@ func (s *tasksSuite) TestEditTask() {
 			"error": null,
 			"data": {
 				"id": "345",
+				"archived": false,
 				"task_list_id": "777",
 				"name": "qqq",
 				"text": "looool",

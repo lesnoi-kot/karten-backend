@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -11,7 +12,7 @@ import (
 
 func (api *APIService) getBoard(c echo.Context) error {
 	id := c.Param("id")
-	board, err := api.store.Boards.Get(id)
+	board, err := api.store.Boards.Get(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return echo.ErrNotFound
@@ -48,7 +49,7 @@ func (api *APIService) addBoard(c echo.Context) error {
 		CoverURL:  body.CoverURL,
 	}
 
-	if err := api.store.Boards.Add(board); err != nil {
+	if err := api.store.Boards.Add(context.Background(), board); err != nil {
 		return err
 	}
 
@@ -74,7 +75,7 @@ func (api *APIService) editBoard(c echo.Context) error {
 		return echo.ErrBadRequest
 	}
 
-	board, err := api.store.Boards.Get(id)
+	board, err := api.store.Boards.Get(context.Background(), id)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return echo.ErrNotFound
@@ -94,7 +95,7 @@ func (api *APIService) editBoard(c echo.Context) error {
 		board.CoverURL = *body.CoverURL
 	}
 
-	if err = api.store.Boards.Update(board); err != nil {
+	if err = api.store.Boards.Update(context.Background(), board); err != nil {
 		return err
 	}
 
@@ -104,7 +105,7 @@ func (api *APIService) editBoard(c echo.Context) error {
 func (api *APIService) deleteBoard(c echo.Context) error {
 	id := c.Param("id")
 
-	if err := api.store.Boards.Delete(id); err != nil {
+	if err := api.store.Boards.Delete(context.Background(), id); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			return echo.ErrNotFound
 		}

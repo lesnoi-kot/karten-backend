@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"context"
 	"time"
 
 	"github.com/lesnoi-kot/karten-backend/src/api"
@@ -60,107 +61,107 @@ func (suite *baseAPITestSuite) SetupTest() {
 	suite.init()
 }
 
-func (m mockBoardsStore) Get(id string) (*store.Board, error) {
+func (m mockBoardsStore) Get(ctx context.Context, id string) (*store.Board, error) {
 	args := m.Called(id)
 	return args.Get(0).(*store.Board), args.Error(1)
 }
 
-func (m mockBoardsStore) Add(a *store.Board) error {
+func (m mockBoardsStore) Add(ctx context.Context, a *store.Board) error {
 	args := m.Called(a)
 	return args.Error(0)
 }
 
-func (m mockBoardsStore) Update(a *store.Board) error {
+func (m mockBoardsStore) Update(ctx context.Context, a *store.Board) error {
 	args := m.Called(a)
 	return args.Error(0)
 }
 
-func (m mockBoardsStore) Delete(id string) error {
+func (m mockBoardsStore) Delete(ctx context.Context, id string) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
 
-func (m mockProjectsStore) Get(id string) (*store.Project, error) {
+func (m mockProjectsStore) Get(ctx context.Context, id string) (*store.Project, error) {
 	args := m.Called(id)
 	return args.Get(0).(*store.Project), args.Error(1)
 }
 
-func (m mockProjectsStore) GetAll() ([]*store.Project, error) {
+func (m mockProjectsStore) GetAll(ctx context.Context) ([]*store.Project, error) {
 	args := m.Called()
 	return args.Get(0).([]*store.Project), args.Error(1)
 }
 
-func (m mockProjectsStore) Add(item *store.Project) error {
+func (m mockProjectsStore) Add(ctx context.Context, item *store.Project) error {
 	args := m.Called(item)
 	return args.Error(0)
 }
 
-func (m mockProjectsStore) Update(item *store.Project) error {
+func (m mockProjectsStore) Update(ctx context.Context, item *store.Project) error {
 	args := m.Called(item)
 	return args.Error(0)
 }
 
-func (m mockProjectsStore) Delete(id string) error {
+func (m mockProjectsStore) Delete(ctx context.Context, id string) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
 
-func (m mockTaskListsStore) Get(id string) (*store.TaskList, error) {
+func (m mockTaskListsStore) Get(ctx context.Context, id string) (*store.TaskList, error) {
 	args := m.Called(id)
 	return args.Get(0).(*store.TaskList), args.Error(1)
 }
 
-func (m mockTaskListsStore) Add(item *store.TaskList) error {
+func (m mockTaskListsStore) Add(ctx context.Context, item *store.TaskList) error {
 	args := m.Called(item)
 	return args.Error(0)
 }
 
-func (m mockTaskListsStore) Update(item *store.TaskList) error {
+func (m mockTaskListsStore) Update(ctx context.Context, item *store.TaskList) error {
 	args := m.Called(item)
 	return args.Error(0)
 }
 
-func (m mockTaskListsStore) Delete(id string) error {
+func (m mockTaskListsStore) Delete(ctx context.Context, id string) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
 
-func (m mockTasksStore) Get(id string) (*store.Task, error) {
+func (m mockTasksStore) Get(ctx context.Context, id string) (*store.Task, error) {
 	args := m.Called(id)
 	return args.Get(0).(*store.Task), args.Error(1)
 }
 
-func (m mockTasksStore) Add(item *store.Task) error {
+func (m mockTasksStore) Add(ctx context.Context, item *store.Task) error {
 	args := m.Called(item)
 	return args.Error(0)
 }
 
-func (m mockTasksStore) Update(item *store.Task) error {
+func (m mockTasksStore) Update(ctx context.Context, item *store.Task) error {
 	args := m.Called(item)
 	return args.Error(0)
 }
 
-func (m mockTasksStore) Delete(id string) error {
+func (m mockTasksStore) Delete(ctx context.Context, id string) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
 
-func (m mockCommentsStore) Get(id string) (*store.Comment, error) {
+func (m mockCommentsStore) Get(ctx context.Context, id string) (*store.Comment, error) {
 	args := m.Called(id)
 	return args.Get(0).(*store.Comment), args.Error(1)
 }
 
-func (m mockCommentsStore) Add(item *store.Comment) error {
+func (m mockCommentsStore) Add(ctx context.Context, item *store.Comment) error {
 	args := m.Called(item)
 	return args.Error(0)
 }
 
-func (m mockCommentsStore) Update(item *store.Comment) error {
+func (m mockCommentsStore) Update(ctx context.Context, item *store.Comment) error {
 	args := m.Called(item)
 	return args.Error(0)
 }
 
-func (m mockCommentsStore) Delete(id string) error {
+func (m mockCommentsStore) Delete(ctx context.Context, id string) error {
 	args := m.Called(id)
 	return args.Error(0)
 }

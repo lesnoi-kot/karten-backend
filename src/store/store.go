@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -16,10 +17,10 @@ import (
 var ErrNotFound = errors.New("resource not found")
 
 type Repo[T any] interface {
-	Get(id string) (*T, error)
-	Add(item *T) error
-	Update(item *T) error
-	Delete(id string) error
+	Get(ctx context.Context, id string) (*T, error)
+	Add(ctx context.Context, item *T) error
+	Update(ctx context.Context, item *T) error
+	Delete(ctx context.Context, id string) error
 }
 
 type Store struct {
@@ -28,7 +29,7 @@ type Store struct {
 	Projects interface {
 		Repo[Project]
 
-		GetAll() ([]*Project, error)
+		GetAll(ctx context.Context) ([]*Project, error)
 	}
 	Boards interface {
 		Repo[Board]
@@ -61,6 +62,7 @@ func NewStore(c StoreConfig) (*Store, error) {
 	if c.Debug {
 		db.AddQueryHook(bundebug.NewQueryHook(
 			bundebug.WithVerbose(true),
+			// Adapt zap Logger to io.Writer
 			bundebug.WithWriter(
 				&zapio.Writer{Log: c.Logger.Desugar(), Level: zap.DebugLevel},
 			),

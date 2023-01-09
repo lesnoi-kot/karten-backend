@@ -12,7 +12,7 @@ type TasksStore struct {
 	db *bun.DB
 }
 
-func (s *TasksStore) Get(id string) (*Task, error) {
+func (s *TasksStore) Get(ctx context.Context, id string) (*Task, error) {
 	task := new(Task)
 
 	err := s.db.
@@ -20,7 +20,7 @@ func (s *TasksStore) Get(id string) (*Task, error) {
 		Model(task).
 		Where("id = ?", id).
 		Relation("Comments").
-		Scan(context.Background())
+		Scan(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
@@ -32,13 +32,13 @@ func (s *TasksStore) Get(id string) (*Task, error) {
 	return task, nil
 }
 
-func (s *TasksStore) Add(task *Task) error {
+func (s *TasksStore) Add(ctx context.Context, task *Task) error {
 	_, err := s.db.
 		NewInsert().
 		Model(task).
 		Column("task_list_id", "name", "text", "position", "due_date").
 		Returning("*").
-		Exec(context.Background())
+		Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -46,13 +46,13 @@ func (s *TasksStore) Add(task *Task) error {
 	return nil
 }
 
-func (s *TasksStore) Update(task *Task) error {
+func (s *TasksStore) Update(ctx context.Context, task *Task) error {
 	result, err := s.db.NewUpdate().
 		Model(task).
 		Column("task_list_id", "name", "text", "position", "due_date", "archived").
 		Where("id = ?", task.ID).
 		Returning("*").
-		Exec(context.Background())
+		Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -64,12 +64,12 @@ func (s *TasksStore) Update(task *Task) error {
 	return nil
 }
 
-func (s *TasksStore) Delete(id string) error {
+func (s *TasksStore) Delete(ctx context.Context, id string) error {
 	result, err := s.db.
 		NewDelete().
 		Model((*Task)(nil)).
 		Where("id = ?", id).
-		Exec(context.Background())
+		Exec(ctx)
 	if err != nil {
 		return err
 	}

@@ -12,7 +12,7 @@ type ProjectsStore struct {
 	db *bun.DB
 }
 
-func (s ProjectsStore) Get(id string) (*Project, error) {
+func (s ProjectsStore) Get(ctx context.Context, id string) (*Project, error) {
 	project := new(Project)
 
 	err := s.db.
@@ -20,7 +20,7 @@ func (s ProjectsStore) Get(id string) (*Project, error) {
 		Model(project).
 		Where("id = ?", id).
 		Relation("Boards").
-		Scan(context.Background())
+		Scan(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
@@ -32,12 +32,12 @@ func (s ProjectsStore) Get(id string) (*Project, error) {
 	return project, nil
 }
 
-func (s ProjectsStore) GetAll() ([]*Project, error) {
+func (s ProjectsStore) GetAll(ctx context.Context) ([]*Project, error) {
 	var projects []*Project
 
 	err := s.db.NewSelect().
 		Model(&projects).
-		Scan(context.Background())
+		Scan(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -45,12 +45,12 @@ func (s ProjectsStore) GetAll() ([]*Project, error) {
 	return projects, nil
 }
 
-func (s ProjectsStore) Add(project *Project) error {
+func (s ProjectsStore) Add(ctx context.Context, project *Project) error {
 	_, err := s.db.NewInsert().
 		Model(project).
 		Column("name").
 		Returning("*").
-		Exec(context.Background())
+		Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -58,13 +58,13 @@ func (s ProjectsStore) Add(project *Project) error {
 	return nil
 }
 
-func (s ProjectsStore) Update(project *Project) error {
+func (s ProjectsStore) Update(ctx context.Context, project *Project) error {
 	result, err := s.db.NewUpdate().
 		Model(project).
 		Column("name").
 		Where("id = ?", project.ID).
 		Returning("*").
-		Exec(context.Background())
+		Exec(ctx)
 	if err != nil {
 		return err
 	}
@@ -76,11 +76,11 @@ func (s ProjectsStore) Update(project *Project) error {
 	return nil
 }
 
-func (s ProjectsStore) Delete(id string) error {
+func (s ProjectsStore) Delete(ctx context.Context, id string) error {
 	result, err := s.db.NewDelete().
 		Model((*Project)(nil)).
 		Where("id = ?", id).
-		Exec(context.Background())
+		Exec(ctx)
 	if err != nil {
 		return err
 	}
