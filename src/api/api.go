@@ -49,6 +49,7 @@ func NewAPI(c APIConfig) *APIService {
 	if c.Debug == false {
 		api.handler.Use(middleware.Recover())
 	}
+	api.handler.Use(parseError)
 
 	initRoutes(api)
 
@@ -79,6 +80,8 @@ func (a APIService) Prefix() string {
 
 func initRoutes(api *APIService) {
 	root := api.handler.Group(api.apiPrefix)
+
+	root.GET("/ping", api.ping)
 
 	initProjectsRoute(root, api)
 	initBoardsRoute(root, api)
@@ -135,4 +138,8 @@ func initCommentsRoute(root *echo.Group, api *APIService) {
 
 	subroute.PATCH("/:id", api.editComment, requireId)
 	subroute.DELETE("/:id", api.deleteComment, requireId)
+}
+
+func (api *APIService) ping(c echo.Context) error {
+	return c.NoContent(http.StatusOK)
 }

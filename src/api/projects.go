@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strings"
 
@@ -24,10 +23,6 @@ func (api *APIService) getProject(c echo.Context) error {
 
 	project, err := api.store.Projects.Get(context.Background(), id)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return echo.ErrNotFound
-		}
-
 		return err
 	}
 
@@ -61,10 +56,6 @@ func (api *APIService) deleteProject(c echo.Context) error {
 	id := c.Param("id")
 	err := api.store.Projects.Delete(context.Background(), id)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return echo.ErrNotFound
-		}
-
 		return err
 	}
 
@@ -86,10 +77,6 @@ func (api *APIService) editProject(c echo.Context) error {
 	id := c.Param("id")
 	project, err := api.store.Projects.Get(context.Background(), id)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return echo.ErrNotFound
-		}
-
 		return err
 	}
 

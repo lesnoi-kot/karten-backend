@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strings"
 
@@ -14,10 +13,6 @@ func (api *APIService) getBoard(c echo.Context) error {
 	id := c.Param("id")
 	board, err := api.store.Boards.Get(context.Background(), id)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return echo.ErrNotFound
-		}
-
 		return err
 	}
 
@@ -77,10 +72,6 @@ func (api *APIService) editBoard(c echo.Context) error {
 
 	board, err := api.store.Boards.Get(context.Background(), id)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return echo.ErrNotFound
-		}
-
 		return err
 	}
 
@@ -106,10 +97,6 @@ func (api *APIService) deleteBoard(c echo.Context) error {
 	id := c.Param("id")
 
 	if err := api.store.Boards.Delete(context.Background(), id); err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return echo.ErrNotFound
-		}
-
 		return err
 	}
 

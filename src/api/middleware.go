@@ -1,10 +1,12 @@
 package api
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
+	"github.com/lesnoi-kot/karten-backend/src/store"
 )
 
 var requireId echo.MiddlewareFunc = requireParam("id")
@@ -41,4 +43,19 @@ type Validator struct {
 
 func (v *Validator) Validate(i interface{}) error {
 	return v.validator.Struct(i)
+}
+
+func parseError(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		err := next(c)
+		if err == nil {
+			return nil
+		}
+
+		if errors.Is(err, store.ErrNotFound) {
+			return echo.ErrNotFound
+		}
+
+		return err
+	}
 }

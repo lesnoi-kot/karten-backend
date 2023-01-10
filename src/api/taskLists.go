@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strings"
 
@@ -15,10 +14,6 @@ func (api *APIService) getTaskList(c echo.Context) error {
 
 	taskList, err := api.store.TaskLists.Get(context.Background(), id)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return echo.ErrNotFound
-		}
-
 		return err
 	}
 
@@ -79,10 +74,6 @@ func (api *APIService) editTaskList(c echo.Context) error {
 	id := c.Param("id")
 	taskList, err := api.store.TaskLists.Get(context.Background(), id)
 	if err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return echo.ErrNotFound
-		}
-
 		return err
 	}
 
@@ -110,10 +101,6 @@ func (api *APIService) deleteTaskList(c echo.Context) error {
 	id := c.Param("id")
 
 	if err := api.store.TaskLists.Delete(context.Background(), id); err != nil {
-		if errors.Is(err, store.ErrNotFound) {
-			return echo.ErrNotFound
-		}
-
 		return err
 	}
 
