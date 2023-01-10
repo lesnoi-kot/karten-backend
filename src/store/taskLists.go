@@ -9,7 +9,7 @@ import (
 )
 
 type TaskListsStore struct {
-	db *bun.DB
+	db bun.IDB
 }
 
 func (s TaskListsStore) Get(ctx context.Context, id string) (*TaskList, error) {

@@ -2,6 +2,7 @@ package store_test
 
 import (
 	"context"
+	"errors"
 	"os"
 	"testing"
 	"time"
@@ -496,5 +497,95 @@ func (s *storeSuite) TestCommentsStore() {
 		comment, err = s.store.Comments.Get(context.Background(), comment.ID)
 		s.ErrorIs(err, store.ErrNotFound)
 		s.Nil(comment)
+	})
+}
+
+func (s *storeSuite) TestTxStore() {
+	s.Run("Delete all projects and rollback", func() {
+		txStore, err := s.store.BeginTx(context.Background())
+		s.Require().NoError(err)
+
+		all, err := txStore.Projects.GetAll(context.Background())
+		s.Require().NoError(err)
+
+		beforeLen := len(all)
+		for _, p := range all {
+			err = txStore.Projects.Delete(context.Background(), p.ID)
+			s.Require().NoError(err)
+		}
+
+		all, err = txStore.Projects.GetAll(context.Background())
+		s.Require().NoError(err)
+		s.Require().Empty(all)
+
+		err = txStore.Rollback()
+		s.Require().NoError(err)
+
+		all, err = s.store.Projects.GetAll(context.Background())
+		s.Require().NoError(err)
+		s.Require().Len(all, beforeLen)
+	})
+
+	s.Run("RunInTx - delete all projects and rollback", func() {
+		beforeLen := 43645654
+
+		err := s.store.RunInTx(context.Background(), func(ctx context.Context, store *store.TxStore) error {
+			all, err := store.Projects.GetAll(ctx)
+			s.Require().NoError(err)
+
+			beforeLen = len(all)
+
+			for _, p := range all {
+				err = store.Projects.Delete(ctx, p.ID)
+				s.Require().NoError(err)
+			}
+
+			all, err = store.Projects.GetAll(ctx)
+			s.Require().NoError(err)
+			s.Require().Empty(all)
+
+			return errors.New("You know I want to rollback now")
+		})
+		s.Require().Error(err)
+
+		all, err := s.store.Projects.GetAll(context.Background())
+		s.Require().NoError(err)
+		s.Require().Len(all, beforeLen)
+	})
+
+	s.Run("RunInTx - commit empty", func() {
+		ctx := context.Background()
+		err := s.store.RunInTx(ctx, func(ctx context.Context, s *store.TxStore) error {
+			return nil
+		})
+		s.Require().NoError(err)
+	})
+
+	s.Run("RunInTx - double rollback", func() {
+		ctx := context.Background()
+		err := s.store.RunInTx(ctx, func(ctx context.Context, s *store.TxStore) error {
+			s.Rollback()
+			return errors.New("xxx")
+		})
+		s.Require().ErrorContains(err, "transaction has already been committed or rolled back")
+	})
+
+	s.Run("RunInTx - panic", func() {
+		ctx := context.Background()
+
+		s.Panics(func() {
+			s.store.RunInTx(ctx, func(ctx context.Context, txStore *store.TxStore) error {
+				err := txStore.Projects.Delete(ctx, "fd5f451d-fac6-4bc7-a677-34adb39a6701")
+				s.Require().NoError(err)
+
+				_, err = txStore.Projects.Get(ctx, "fd5f451d-fac6-4bc7-a677-34adb39a6701")
+				s.Require().ErrorIs(err, store.ErrNotFound)
+
+				panic("Test panic")
+			})
+		})
+
+		_, err := s.store.Projects.Get(ctx, "fd5f451d-fac6-4bc7-a677-34adb39a6701")
+		s.Require().NoError(err)
 	})
 }

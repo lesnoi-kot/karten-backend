@@ -23,9 +23,7 @@ type Repo[T any] interface {
 	Delete(ctx context.Context, id string) error
 }
 
-type Store struct {
-	*bun.DB
-
+type Entities struct {
 	Projects interface {
 		Repo[Project]
 
@@ -43,6 +41,16 @@ type Store struct {
 	Comments interface {
 		Repo[Comment]
 	}
+}
+
+type Store struct {
+	Entities
+	db *bun.DB
+}
+
+type TxStore struct {
+	Entities
+	tx bun.Tx
 }
 
 type StoreConfig struct {
@@ -70,13 +78,75 @@ func NewStore(c StoreConfig) (*Store, error) {
 	}
 
 	store := &Store{
-		DB:        db,
-		Projects:  &ProjectsStore{db},
-		Boards:    &BoardsStore{db},
-		TaskLists: &TaskListsStore{db},
-		Tasks:     &TasksStore{db},
-		Comments:  &CommentsStore{db},
+		db: db,
+		Entities: Entities{
+			Projects:  ProjectsStore{db},
+			Boards:    BoardsStore{db},
+			TaskLists: TaskListsStore{db},
+			Tasks:     TasksStore{db},
+			Comments:  CommentsStore{db},
+		},
 	}
 
 	return store, nil
+}
+
+func (s *Store) Close() error {
+	return s.db.Close()
+}
+
+func (s *Store) BeginTx(ctx context.Context) (*TxStore, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return newTxStore(tx), nil
+}
+
+func (s *Store) RunInTx(ctx context.Context, fn func(ctx context.Context, s *TxStore) error) error {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	txStore := newTxStore(tx)
+
+	defer func() {
+		if p := recover(); p != nil {
+			txStore.Rollback()
+			panic(p)
+		}
+	}()
+
+	if err = fn(ctx, txStore); err != nil {
+		if txErr := txStore.Rollback(); txErr != nil {
+			return fmt.Errorf("%w; %s", txErr, err)
+		}
+
+		return err
+	}
+
+	return txStore.Commit()
+}
+
+func (s *TxStore) Commit() error {
+	return s.tx.Commit()
+}
+
+func (s *TxStore) Rollback() error {
+	return s.tx.Rollback()
+}
+
+func newTxStore(tx bun.Tx) *TxStore {
+	return &TxStore{
+		tx: tx,
+		Entities: Entities{
+			Projects:  ProjectsStore{tx},
+			Boards:    BoardsStore{tx},
+			TaskLists: TaskListsStore{tx},
+			Tasks:     TasksStore{tx},
+			Comments:  CommentsStore{tx},
+		},
+	}
 }

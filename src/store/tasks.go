@@ -9,10 +9,10 @@ import (
 )
 
 type TasksStore struct {
-	db *bun.DB
+	db bun.IDB
 }
 
-func (s *TasksStore) Get(ctx context.Context, id string) (*Task, error) {
+func (s TasksStore) Get(ctx context.Context, id string) (*Task, error) {
 	task := new(Task)
 
 	err := s.db.
@@ -32,7 +32,7 @@ func (s *TasksStore) Get(ctx context.Context, id string) (*Task, error) {
 	return task, nil
 }
 
-func (s *TasksStore) Add(ctx context.Context, task *Task) error {
+func (s TasksStore) Add(ctx context.Context, task *Task) error {
 	_, err := s.db.
 		NewInsert().
 		Model(task).
@@ -46,7 +46,7 @@ func (s *TasksStore) Add(ctx context.Context, task *Task) error {
 	return nil
 }
 
-func (s *TasksStore) Update(ctx context.Context, task *Task) error {
+func (s TasksStore) Update(ctx context.Context, task *Task) error {
 	result, err := s.db.NewUpdate().
 		Model(task).
 		Column("task_list_id", "name", "text", "position", "due_date", "archived").
@@ -64,7 +64,7 @@ func (s *TasksStore) Update(ctx context.Context, task *Task) error {
 	return nil
 }
 
-func (s *TasksStore) Delete(ctx context.Context, id string) error {
+func (s TasksStore) Delete(ctx context.Context, id string) error {
 	result, err := s.db.
 		NewDelete().
 		Model((*Task)(nil)).

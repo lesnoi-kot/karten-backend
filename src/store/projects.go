@@ -9,7 +9,7 @@ import (
 )
 
 type ProjectsStore struct {
-	db *bun.DB
+	db bun.IDB
 }
 
 func (s ProjectsStore) Get(ctx context.Context, id string) (*Project, error) {
