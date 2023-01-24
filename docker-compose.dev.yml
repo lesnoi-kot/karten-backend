@@ -1,15 +1,4 @@
 services:
-  # karten-backend:
-  #   build:
-  #     context: .
-  #   environment:
-  #     STORE_DSN:
-  #     API_HOST:
-  #   depends_on:
-  #     - db
-  #   networks:
-  #     - backend
-
   db:
     image: postgres:15.1-alpine
     environment:

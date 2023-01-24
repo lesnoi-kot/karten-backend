@@ -2,7 +2,9 @@ package api
 
 import (
 	"errors"
+	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
@@ -37,11 +39,15 @@ func requireParam(name string) echo.MiddlewareFunc {
 	}
 }
 
-type Validator struct {
+type EchoValidator struct {
 	validator *validator.Validate
 }
 
-func (v *Validator) Validate(i interface{}) error {
+func newEchoValidator() EchoValidator {
+	return EchoValidator{validator.New()}
+}
+
+func (v EchoValidator) Validate(i interface{}) error {
 	return v.validator.Struct(i)
 }
 
@@ -57,5 +63,12 @@ func parseError(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		return err
+	}
+}
+
+func emulateDelay(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		time.Sleep(2 * time.Second)
+		return next(c)
 	}
 }

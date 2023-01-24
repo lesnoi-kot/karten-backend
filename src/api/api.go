@@ -3,9 +3,9 @@ package api
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"time"
 
-	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/lesnoi-kot/karten-backend/src/store"
@@ -25,34 +25,61 @@ type APIService struct {
 }
 
 type APIConfig struct {
-	Store     *store.Store
-	Logger    *zap.SugaredLogger
-	APIPrefix string
-	Debug     bool
+	Store        *store.Store
+	Logger       *zap.SugaredLogger
+	APIPrefix    string
+	AllowOrigins []string
+	Debug        bool
 }
 
-func NewAPI(c APIConfig) *APIService {
+func NewAPI(config APIConfig) *APIService {
 	api := &APIService{
 		handler:   echo.New(),
-		store:     c.Store,
-		logger:    c.Logger,
-		apiPrefix: c.APIPrefix,
+		store:     config.Store,
+		logger:    config.Logger,
+		apiPrefix: config.APIPrefix,
 	}
 
+	api.handler.Debug = config.Debug
 	api.handler.Logger.SetOutput(
-		&zapio.Writer{Log: c.Logger.Desugar(), Level: zap.DebugLevel},
+		&zapio.Writer{Log: config.Logger.Desugar(), Level: zap.DebugLevel},
 	)
-	api.handler.Validator = &Validator{validator.New()}
+	api.handler.Validator = newEchoValidator()
+	api.handler.HTTPErrorHandler = api.errorHandler
+
+	corsConfig := middleware.CORSConfig{
+		AllowOrigins: config.AllowOrigins,
+	}
+
+	csrfConfig := middleware.CSRFConfig{
+		CookieSameSite: http.SameSiteStrictMode,
+		CookieSecure:   true,
+	}
 
 	api.handler.Pre(middleware.RemoveTrailingSlash())
-	api.handler.Use(middleware.Logger())
-	if c.Debug == false {
+	api.handler.Use(
+		middleware.Logger(),
+		middleware.CORSWithConfig(corsConfig),
+		middleware.CSRFWithConfig(csrfConfig),
+
+		parseError,
+	)
+
+	if config.Debug {
+		// Emulate delay to debug frontend ux.
+		api.handler.Use(emulateDelay)
+
+		// Proxy the frontend application if in the DEBUG mode.
+		spaURL, _ := url.Parse("http://localhost:3000/")
+		balancer := middleware.NewRoundRobinBalancer([]*middleware.ProxyTarget{
+			{URL: spaURL},
+		})
+		api.handler.Group("/client", middleware.Proxy(balancer))
+	} else {
 		api.handler.Use(middleware.Recover())
 	}
-	api.handler.Use(parseError)
 
 	initRoutes(api)
-
 	return api
 }
 
@@ -96,50 +123,54 @@ func initProjectsRoute(root *echo.Group, api *APIService) {
 	subroute.GET("", api.getProjects)
 	subroute.POST("", api.addProject)
 
-	subroute.GET("/:id", api.getProject, requireId)
-	subroute.PATCH("/:id", api.editProject, requireId)
-	subroute.DELETE("/:id", api.deleteProject, requireId)
+	subroute.GET("/:id", api.getProject)
+	subroute.PATCH("/:id", api.editProject)
+	subroute.DELETE("/:id", api.deleteProject)
 
-	subroute.POST("/:id/boards", api.addBoard, requireId)
+	subroute.POST("/:id/boards", api.addBoard)
 }
 
 func initBoardsRoute(root *echo.Group, api *APIService) {
 	subroute := root.Group("/boards")
 
-	subroute.GET("/:id", api.getBoard, requireId)
-	subroute.PATCH("/:id", api.editBoard, requireId)
-	subroute.DELETE("/:id", api.deleteBoard, requireId)
+	subroute.GET("/:id", api.getBoard)
+	subroute.PATCH("/:id", api.editBoard)
+	subroute.DELETE("/:id", api.deleteBoard)
 
-	subroute.POST("/:id/task-lists", api.addTaskList, requireId)
+	subroute.POST("/:id/task-lists", api.addTaskList)
 }
 
 func initTaskListsRoute(root *echo.Group, api *APIService) {
 	subroute := root.Group("/task-lists")
 
-	subroute.GET("/:id", api.getTaskList, requireId)
-	subroute.PATCH("/:id", api.editTaskList, requireId)
-	subroute.DELETE("/:id", api.deleteTaskList, requireId)
+	subroute.GET("/:id", api.getTaskList)
+	subroute.PATCH("/:id", api.editTaskList)
+	subroute.DELETE("/:id", api.deleteTaskList)
 
-	subroute.POST("/:id/tasks", api.addTask, requireId)
+	subroute.POST("/:id/tasks", api.addTask)
 }
 
 func initTasksRoute(root *echo.Group, api *APIService) {
 	subroute := root.Group("/tasks")
 
-	subroute.GET("/:id", api.getTask, requireId)
-	subroute.PATCH("/:id", api.editTask, requireId)
-	subroute.DELETE("/:id", api.deleteTask, requireId)
+	subroute.GET("/:id", api.getTask)
+	subroute.PATCH("/:id", api.editTask)
+	subroute.DELETE("/:id", api.deleteTask)
 
-	subroute.POST("/:id/comments", api.addComment, requireId)
+	subroute.POST("/:id/comments", api.addComment)
 }
 
 func initCommentsRoute(root *echo.Group, api *APIService) {
 	subroute := root.Group("/comments")
 
-	subroute.PATCH("/:id", api.editComment, requireId)
-	subroute.DELETE("/:id", api.deleteComment, requireId)
+	subroute.PATCH("/:id", api.editComment)
+	subroute.DELETE("/:id", api.deleteComment)
 }
 
 func (api *APIService) ping(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
+}
+
+func (api *APIService) errorHandler(err error, c echo.Context) {
+	api.handler.DefaultHTTPErrorHandler(err, c)
 }

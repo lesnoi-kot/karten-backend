@@ -13,9 +13,10 @@ import (
 )
 
 type AppConfig struct {
-	StoreDSN       string `env:"STORE_DSN,notEmpty,unset"`
-	APIBindAddress string `env:"API_HOST,notEmpty"`
-	Debug          bool   `env:"DEBUG"`
+	StoreDSN       string   `env:"STORE_DSN,notEmpty,unset"`
+	APIBindAddress string   `env:"API_HOST,notEmpty"`
+	AllowOrigins   []string `env:"ALLOW_ORIGINS,notEmpty" envSeparator:","`
+	Debug          bool     `env:"DEBUG"`
 }
 
 func main() {
@@ -37,10 +38,11 @@ func main() {
 	}
 
 	apiService := api.NewAPI(api.APIConfig{
-		Store:     storeService,
-		Logger:    logger,
-		APIPrefix: "/api",
-		Debug:     cfg.Debug,
+		Store:        storeService,
+		Logger:       logger,
+		APIPrefix:    "/api",
+		AllowOrigins: cfg.AllowOrigins,
+		Debug:        cfg.Debug,
 	})
 
 	go handleSignals(apiService)
