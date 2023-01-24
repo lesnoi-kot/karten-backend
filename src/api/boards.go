@@ -29,12 +29,12 @@ func (api *APIService) addBoard(c echo.Context) error {
 	}
 
 	if err := c.Bind(&body); err != nil {
-		return echo.ErrBadRequest
+		return err
 	}
 
 	body.Name = strings.TrimSpace(body.Name)
 	if err := c.Validate(&body); err != nil {
-		return echo.ErrBadRequest
+		return err
 	}
 
 	board := &store.Board{
@@ -62,12 +62,12 @@ func (api *APIService) editBoard(c echo.Context) error {
 	}
 
 	if err := c.Bind(&body); err != nil {
-		return echo.ErrBadRequest
+		return err
 	}
 
 	body.Name = strings.TrimSpace(body.Name)
 	if err := c.Validate(&body); err != nil {
-		return echo.ErrBadRequest
+		return err
 	}
 
 	board, err := api.store.Boards.Get(context.Background(), id)

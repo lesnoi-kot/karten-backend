@@ -15,12 +15,12 @@ func (api *APIService) addComment(c echo.Context) error {
 	}
 
 	if err := c.Bind(&body); err != nil {
-		return echo.ErrBadRequest
+		return err
 	}
 
 	body.Text = strings.TrimSpace(body.Text)
 	if err := c.Validate(&body); err != nil {
-		return echo.ErrBadRequest
+		return err
 	}
 
 	taskID := c.Param("id")
@@ -43,12 +43,12 @@ func (api *APIService) editComment(c echo.Context) error {
 	}
 
 	if err := c.Bind(&body); err != nil {
-		return echo.ErrBadRequest
+		return err
 	}
 
 	body.Text = strings.TrimSpace(body.Text)
 	if err := c.Validate(&body); err != nil {
-		return echo.ErrBadRequest
+		return err
 	}
 
 	id := c.Param("id")

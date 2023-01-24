@@ -40,7 +40,6 @@ func (s *taskListsSuite) TestGetTaskList() {
 
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": {
 				"id": "111",
 				"board_id": "board-id",
@@ -86,7 +85,6 @@ func (s *taskListsSuite) TestAddTaskList() {
 
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": {
 				"id": "777",
 				"board_id": "board-id",
@@ -144,7 +142,6 @@ func (s *taskListsSuite) TestEditTaskList() {
 		s.api.Server().Handler.ServeHTTP(rec, req)
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": {
 				"id": "888",
 				"board_id": "board-id",

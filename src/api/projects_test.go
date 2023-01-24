@@ -39,7 +39,6 @@ func (s *projectsSuite) TestGetProjects() {
 
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": [
 				{"id": "1", "name": "A"},
 				{"id": "2", "name": "B"},
@@ -70,7 +69,6 @@ func (s *projectsSuite) TestGetProject() {
 
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": {"id": "id-1", "name": "First"}
 		}`, rec.Body.String())
 	})
@@ -123,7 +121,6 @@ func (s *projectsSuite) TestAddProject() {
 
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": {"id": "new-id", "name": "Unit-test"}
 		}`, rec.Body.String())
 	})
@@ -178,7 +175,6 @@ func (s *projectsSuite) TestEditProject() {
 		s.api.Server().Handler.ServeHTTP(rec, req)
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": {"id": "111", "name": "New"}
 		}`, rec.Body.String())
 	})

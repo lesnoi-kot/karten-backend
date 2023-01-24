@@ -41,7 +41,6 @@ func (s *tasksSuite) TestGetTask() {
 
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": {
 				"id": "123",
 				"task_list_id": "111",
@@ -85,7 +84,6 @@ func (s *tasksSuite) TestAddTask() {
 
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": {
 				"id": "555",
 				"task_list_id": "123",
@@ -172,7 +170,6 @@ func (s *tasksSuite) TestEditTask() {
 
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": {
 				"id": "345",
 				"archived": false,

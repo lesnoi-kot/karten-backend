@@ -41,7 +41,6 @@ func (s *boardsSuite) TestGetBoard() {
 
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": {
 				"id": "123",
 				"name": "Test",
@@ -91,7 +90,6 @@ func (s *boardsSuite) TestAddBoard() {
 		s.api.Server().Handler.ServeHTTP(rec, req)
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": {
 				"id": "123",
 				"name": "Apple",
@@ -169,7 +167,6 @@ func (s *boardsSuite) TestEditBoard() {
 		s.api.Server().Handler.ServeHTTP(rec, req)
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": {
 				"id": "777",
 				"name": "Pineapple",
@@ -216,7 +213,6 @@ func (s *boardsSuite) TestEditBoard() {
 		s.api.Server().Handler.ServeHTTP(rec, req)
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": {
 				"id": "777",
 				"name": "qwerty",

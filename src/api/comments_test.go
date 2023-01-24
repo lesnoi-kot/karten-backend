@@ -42,7 +42,6 @@ func (s *commentsSuite) TestAddComment() {
 
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": {
 				"id": "qqq",
 				"text": "KEKW",
@@ -94,7 +93,6 @@ func (s *commentsSuite) TestEditComment() {
 		s.api.Server().Handler.ServeHTTP(rec, req)
 		s.Equal(http.StatusOK, rec.Code)
 		s.JSONEq(`{
-			"error": null,
 			"data": {
 				"id": "777",
 				"text": "qwerty!!!",

@@ -31,12 +31,12 @@ func (api *APIService) addTask(c echo.Context) error {
 	}
 
 	if err := c.Bind(&body); err != nil {
-		return echo.ErrBadRequest
+		return err
 	}
 
 	body.Name = strings.TrimSpace(body.Name)
 	if err := c.Validate(&body); err != nil {
-		return echo.ErrBadRequest
+		return err
 	}
 
 	task := &store.Task{
@@ -64,14 +64,14 @@ func (api *APIService) editTask(c echo.Context) error {
 	}
 
 	if err := c.Bind(&body); err != nil {
-		return echo.ErrBadRequest
+		return err
 	}
 
 	if body.Name != nil {
 		*body.Name = strings.TrimSpace(*body.Name)
 	}
 	if err := c.Validate(&body); err != nil {
-		return echo.ErrBadRequest
+		return err
 	}
 
 	id := c.Param("id")
