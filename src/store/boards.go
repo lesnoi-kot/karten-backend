@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/uptrace/bun"
 )
@@ -13,6 +14,41 @@ type BoardsStore struct {
 }
 
 func (s BoardsStore) Get(ctx context.Context, id string) (*Board, error) {
+	updateResult, err := s.db.
+		NewUpdate().
+		Model((*Board)(nil)).
+		Where("id = ?", id).
+		Set("date_last_viewed = ?", time.Now().UTC()).
+		Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if noRowsAffected(updateResult) {
+		return nil, ErrNotFound
+	}
+
+	board := new(Board)
+
+	err = s.db.
+		NewSelect().
+		Model(board).
+		Where("id = ?", id).
+		Relation("TaskLists").
+		Relation("TaskLists.Tasks").
+		Scan(ctx)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+
+		return nil, err
+	}
+
+	return board, nil
+}
+
+func (s BoardsStore) Filter(ctx context.Context, id string) (*Board, error) {
 	board := new(Board)
 
 	err := s.db.

@@ -37,6 +37,11 @@ func (s ProjectsStore) GetAll(ctx context.Context) ([]*Project, error) {
 
 	err := s.db.NewSelect().
 		Model(&projects).
+		Relation("Boards", func(sq *bun.SelectQuery) *bun.SelectQuery {
+			return sq.ExcludeColumn("*").Column(
+				"id", "project_id", "name", "date_last_viewed",
+			)
+		}).
 		Scan(ctx)
 	if err != nil {
 		return nil, err
