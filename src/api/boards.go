@@ -41,7 +41,6 @@ func (api *APIService) addBoard(c echo.Context) error {
 		ProjectID: projectID,
 		Name:      body.Name,
 		Color:     body.Color,
-		CoverURL:  body.CoverURL,
 	}
 
 	if err := api.store.Boards.Add(context.Background(), board); err != nil {
@@ -82,9 +81,6 @@ func (api *APIService) editBoard(c echo.Context) error {
 	if body.Color != nil {
 		board.Color = *body.Color
 	}
-	if body.CoverURL != nil {
-		board.CoverURL = *body.CoverURL
-	}
 
 	if err = api.store.Boards.Update(context.Background(), board); err != nil {
 		return err
@@ -101,4 +97,25 @@ func (api *APIService) deleteBoard(c echo.Context) error {
 	}
 
 	return c.NoContent(http.StatusNoContent)
+}
+
+func (api *APIService) setFavoriteBoard(c echo.Context, favorite bool) error {
+	board := &store.Board{
+		ID:       c.Param("id"),
+		Favorite: favorite,
+	}
+
+	if err := api.store.Boards.UpdateColumns(context.Background(), board, "favorite"); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+func (api *APIService) favoriteBoard(c echo.Context) error {
+	return api.setFavoriteBoard(c, true)
+}
+
+func (api *APIService) unfavoriteBoard(c echo.Context) error {
+	return api.setFavoriteBoard(c, false)
 }

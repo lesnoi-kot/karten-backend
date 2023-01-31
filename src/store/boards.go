@@ -116,3 +116,19 @@ func (s BoardsStore) Delete(ctx context.Context, id string) error {
 
 	return nil
 }
+
+func (s BoardsStore) UpdateColumns(ctx context.Context, item *Board, columns ...string) error {
+	result, err := s.db.NewUpdate().
+		Model(item).
+		Where("id = ?", item.ID).
+		Column(columns...).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	if noRowsAffected(result) {
+		return ErrNotFound
+	}
+	return nil
+}

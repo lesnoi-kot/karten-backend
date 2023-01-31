@@ -32,6 +32,8 @@ type Entities struct {
 	}
 	Boards interface {
 		Repo[Board]
+
+		UpdateColumns(ctx context.Context, item *Board, columns ...string) error
 	}
 	TaskLists interface {
 		Repo[TaskList]

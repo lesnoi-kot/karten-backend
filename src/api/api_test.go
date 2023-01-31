@@ -82,6 +82,11 @@ func (m mockBoardsStore) Delete(ctx context.Context, id string) error {
 	return args.Error(0)
 }
 
+func (m mockBoardsStore) UpdateColumns(ctx context.Context, item *store.Board, columns ...string) error {
+	args := m.Called(item, columns)
+	return args.Error(0)
+}
+
 func (m mockProjectsStore) Get(ctx context.Context, id string) (*store.Project, error) {
 	args := m.Called(id)
 	return args.Get(0).(*store.Project), args.Error(1)
