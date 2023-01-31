@@ -16,8 +16,7 @@ INSERT INTO boards (
   archived,
   color,
   date_created,
-  date_last_viewed,
-  cover_url
+  date_last_viewed
 ) VALUES
   ('fd5f451d-fac6-4bc7-a677-34adb39a6701', '29e247c3-69f1-4397-8bab-b1dd10ae28b2', 'Pet projects',  false, 0, '1970-01-01T00:00:00Z', '1970-01-01T00:00:00Z', NULL),
   ('fd5f451d-fac6-4bc7-a677-34adb39a6701', 'f3fc69f2-27aa-4aed-842e-9ed544661bfd', 'Health',        false, 1, '1970-01-01T00:00:00Z', '1970-01-01T00:00:00Z', NULL),

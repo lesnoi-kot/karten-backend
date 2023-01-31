@@ -15,19 +15,18 @@ INSERT INTO boards (
   id,
   name,
   archived,
-  color,
-  cover_url
+  color
 ) VALUES
-  ('fd5f451d-fac6-4bc7-a677-34adb39a6701', '29e247c3-69f1-4397-8bab-b1dd10ae28b2', 'Pet projects',  false, 0, NULL),
-  ('fd5f451d-fac6-4bc7-a677-34adb39a6701', 'f3fc69f2-27aa-4aed-842e-9ed544661bfd', 'Health',        false, 1, NULL),
-  ('fd5f451d-fac6-4bc7-a677-34adb39a6701', 'ea716cd0-0d2b-4aa9-9a00-e5fce1f6670a', 'TODO Books',    false, 0, NULL),
-  ('fd5f451d-fac6-4bc7-a677-34adb39a6701', '606ecfd6-2a49-4cc2-911c-a0113ebcf0e6', 'Guitar stuff',  false, 0, NULL),
-  ('2f146153-ee2f-4968-a241-11a4f00bf212', '311fef19-eb2a-4c04-98d7-3653d2271293', 'Ideas',         false, 0, NULL),
-  ('2f146153-ee2f-4968-a241-11a4f00bf212', '250bf7a7-ad51-4d62-85cd-c554e4d5f686', 'Householding',  false, 2, NULL),
-  ('2f146153-ee2f-4968-a241-11a4f00bf212', gen_random_uuid(), 'Marketplace',   false, 0, NULL),
-  ('2d2712eb-266d-4626-b017-697a67907e28', gen_random_uuid(), 'New Year resolutions', false, 0, NULL),
-  ('1f894df2-f233-4885-81ef-e21aee62e2cd', gen_random_uuid(), 'Collaboration',        false, 3, NULL),
-  ('1f894df2-f233-4885-81ef-e21aee62e2cd', gen_random_uuid(), 'Open Source',   false, 0, NULL)
+  ('fd5f451d-fac6-4bc7-a677-34adb39a6701', '29e247c3-69f1-4397-8bab-b1dd10ae28b2', 'Pet projects',  false, 0),
+  ('fd5f451d-fac6-4bc7-a677-34adb39a6701', 'f3fc69f2-27aa-4aed-842e-9ed544661bfd', 'Health',        false, 1),
+  ('fd5f451d-fac6-4bc7-a677-34adb39a6701', 'ea716cd0-0d2b-4aa9-9a00-e5fce1f6670a', 'TODO Books',    false, 0),
+  ('fd5f451d-fac6-4bc7-a677-34adb39a6701', '606ecfd6-2a49-4cc2-911c-a0113ebcf0e6', 'Guitar stuff',  false, 0),
+  ('2f146153-ee2f-4968-a241-11a4f00bf212', '311fef19-eb2a-4c04-98d7-3653d2271293', 'Ideas',         false, 0),
+  ('2f146153-ee2f-4968-a241-11a4f00bf212', '250bf7a7-ad51-4d62-85cd-c554e4d5f686', 'Householding',  false, 2),
+  ('2f146153-ee2f-4968-a241-11a4f00bf212', gen_random_uuid(), 'Marketplace',   false, 0),
+  ('2d2712eb-266d-4626-b017-697a67907e28', gen_random_uuid(), 'New Year resolutions', false, 0),
+  ('1f894df2-f233-4885-81ef-e21aee62e2cd', gen_random_uuid(), 'Collaboration',        false, 3),
+  ('1f894df2-f233-4885-81ef-e21aee62e2cd', gen_random_uuid(), 'Open Source',   false, 0)
 ;
 
 INSERT INTO task_lists (

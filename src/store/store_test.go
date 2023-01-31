@@ -87,7 +87,6 @@ func (s *storeSuite) TestProjectsStore() {
 					DateCreated:    testDate,
 					DateLastViewed: testDate,
 					Color:          0,
-					CoverURL:       "",
 				},
 				{
 					ProjectID:      "fd5f451d-fac6-4bc7-a677-34adb39a6701",
@@ -97,7 +96,6 @@ func (s *storeSuite) TestProjectsStore() {
 					DateCreated:    testDate,
 					DateLastViewed: testDate,
 					Color:          1,
-					CoverURL:       "",
 				},
 				{
 					ProjectID:      "fd5f451d-fac6-4bc7-a677-34adb39a6701",
@@ -107,7 +105,6 @@ func (s *storeSuite) TestProjectsStore() {
 					DateCreated:    testDate,
 					DateLastViewed: testDate,
 					Color:          0,
-					CoverURL:       "",
 				},
 				{
 					ProjectID:      "fd5f451d-fac6-4bc7-a677-34adb39a6701",
@@ -117,7 +114,6 @@ func (s *storeSuite) TestProjectsStore() {
 					DateCreated:    testDate,
 					DateLastViewed: testDate,
 					Color:          0,
-					CoverURL:       "",
 				},
 			},
 		}
@@ -141,7 +137,6 @@ func (s *storeSuite) TestProjectsStore() {
 					DateCreated:    testDate,
 					DateLastViewed: testDate,
 					Color:          0,
-					CoverURL:       "",
 				},
 				{
 					ProjectID:      "2f146153-ee2f-4968-a241-11a4f00bf212",
@@ -151,7 +146,6 @@ func (s *storeSuite) TestProjectsStore() {
 					DateCreated:    testDate,
 					DateLastViewed: testDate,
 					Color:          2,
-					CoverURL:       "",
 				},
 			},
 		}
@@ -210,7 +204,6 @@ func (s *storeSuite) TestBoardsStore() {
 			DateCreated:    testDate,
 			DateLastViewed: testDate,
 			Color:          0,
-			CoverURL:       "",
 			TaskLists: []*store.TaskList{
 				{
 					ID:          "2fcff999-fa20-419b-84b9-023d81a7688e",
@@ -262,7 +255,7 @@ func (s *storeSuite) TestBoardsStore() {
 		s.Equal("New test", board.Name)
 		s.Equal(0, board.Color)
 		s.Equal(false, board.Archived)
-		s.Equal("", board.CoverURL)
+		s.Equal(nil, board.CoverID)
 		s.NotEmpty(board.ID)
 		s.Nil(board.TaskLists)
 

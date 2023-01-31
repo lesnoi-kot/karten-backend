@@ -51,13 +51,15 @@ type Board struct {
 	bun.BaseModel `bun:"table:boards"`
 
 	ID             string    `bun:",pk" json:"id"`
+	ShortID        string    `json:"short_id"`
 	Name           string    `json:"name"`
 	ProjectID      string    `json:"project_id"`
 	Archived       bool      `json:"archived"`
+	Favorite       bool      `json:"favorite"`
 	DateCreated    time.Time `json:"date_created"`
 	DateLastViewed time.Time `json:"date_last_viewed"`
 	Color          Color     `json:"color"`
-	CoverURL       string    `bun:"cover_url,nullzero" json:"cover_url"`
+	CoverID        string    `bun:"cover_id,nullzero" json:"cover_id,omitempty"`
 
 	TaskLists []*TaskList `bun:"rel:has-many,join:id=board_id" json:"task_lists,omitempty"`
 }
@@ -65,8 +67,9 @@ type Board struct {
 type Project struct {
 	bun.BaseModel `bun:"table:projects"`
 
-	ID   string `bun:",pk,autoincrement" json:"id"`
-	Name string `json:"name"`
+	ID      string `bun:",pk,autoincrement" json:"id"`
+	ShortID string `json:"short_id"`
+	Name    string `json:"name"`
 
 	AvatarID string     `bun:",nullzero" json:"-"`
 	Avatar   *ImageFile `bun:"rel:has-one,join:avatar_id=id" json:"avatar,omitempty"`
@@ -78,13 +81,14 @@ type Task struct {
 	bun.BaseModel `bun:"table:tasks"`
 
 	ID          string     `bun:",pk,autoincrement" json:"id"`
+	ShortID     string     `json:"short_id"`
 	TaskListID  string     `bun:"task_list_id" json:"task_list_id"`
 	Name        string     `json:"name"`
 	Text        string     `json:"text"`
 	Position    int64      `json:"position"`
 	Archived    bool       `json:"archived"`
 	DateCreated time.Time  `json:"date_created"`
-	DueDate     *time.Time `bun:"due_date,nullzero" json:"due_date"`
+	DueDate     *time.Time `bun:"due_date,nullzero" json:"due_date,omitempty"`
 
 	Comments []*Comment `bun:"rel:has-many,join:id=task_id" json:"comments,omitempty"`
 }

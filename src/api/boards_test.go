@@ -33,7 +33,6 @@ func (s *boardsSuite) TestGetBoard() {
 				DateCreated:    testDate,
 				DateLastViewed: testDate,
 				Color:          0,
-				CoverURL:       "",
 			},
 			nil,
 		).Once()
@@ -48,8 +47,7 @@ func (s *boardsSuite) TestGetBoard() {
 				"archived": false,
 				"date_created": "1970-01-01T00:00:00Z",
 				"date_last_viewed": "1970-01-01T00:00:00Z",
-				"color": 0,
-				"cover_url": ""
+				"color": 0
 			}
 		}`, rec.Body.String())
 	})
@@ -70,8 +68,7 @@ func (s *boardsSuite) TestAddBoard() {
 			"/projects/project-id/boards",
 			strings.NewReader(`{
 				"name": "Apple",
-				"color": 1,
-				"cover_url": "www"
+				"color": 1
 			}`),
 		)
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -97,8 +94,7 @@ func (s *boardsSuite) TestAddBoard() {
 				"archived": false,
 				"date_created": "1970-01-01T00:00:00Z",
 				"date_last_viewed": "1970-01-01T00:00:00Z",
-				"color": 1,
-				"cover_url": "www"
+				"color": 1
 			}
 		}`, rec.Body.String())
 	})
@@ -110,7 +106,6 @@ func (s *boardsSuite) TestAddBoard() {
 			strings.NewReader(`{
 				"name": "Apple",
 				"color": 1,
-				"cover_url": "www",
 			}`),
 		)
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -125,8 +120,7 @@ func (s *boardsSuite) TestAddBoard() {
 			"/projects/project-id/boards",
 			strings.NewReader(`{
 				"name": "",
-				"color": 1,
-				"cover_url": "www"
+				"color": 1
 			}`),
 		)
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -157,7 +151,6 @@ func (s *boardsSuite) TestEditBoard() {
 				DateCreated:    testDate,
 				DateLastViewed: testDate,
 				Color:          3,
-				CoverURL:       "ru",
 			},
 			nil,
 		).Once()
@@ -174,8 +167,7 @@ func (s *boardsSuite) TestEditBoard() {
 				"archived": false,
 				"date_created": "1970-01-01T00:00:00Z",
 				"date_last_viewed": "1970-01-01T00:00:00Z",
-				"color": 3,
-				"cover_url": "ru"
+				"color": 3
 			}
 		}`, rec.Body.String())
 	})
@@ -187,8 +179,7 @@ func (s *boardsSuite) TestEditBoard() {
 			strings.NewReader(`{
 				"name": "qwerty",
 				"archived": true,
-				"color": 123,
-				"cover_url": "com"
+				"color": 123
 			}`),
 		)
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -203,7 +194,6 @@ func (s *boardsSuite) TestEditBoard() {
 				DateCreated:    testDate,
 				DateLastViewed: testDate,
 				Color:          3,
-				CoverURL:       "ru",
 			},
 			nil,
 		).Once()
@@ -220,8 +210,7 @@ func (s *boardsSuite) TestEditBoard() {
 				"archived": true,
 				"date_created": "1970-01-01T00:00:00Z",
 				"date_last_viewed": "1970-01-01T00:00:00Z",
-				"color": 123,
-				"cover_url": "com"
+				"color": 123
 			}
 		}`, rec.Body.String())
 	})
