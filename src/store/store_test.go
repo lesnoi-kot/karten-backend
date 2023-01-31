@@ -32,9 +32,10 @@ func (s *storeSuite) SetupTest() {
 	var err error
 
 	s.store, err = store.NewStore(store.StoreConfig{
-		DSN:    os.Getenv("STORE_DSN"),
-		Logger: zap.NewNop().Sugar(),
-		Debug:  false,
+		DSN:         os.Getenv("STORE_DSN"),
+		Logger:      zap.NewNop().Sugar(),
+		Debug:       false,
+		FileStorage: nil, // TODO
 	})
 
 	s.Require().NoError(err)

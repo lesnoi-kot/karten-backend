@@ -3,6 +3,7 @@ package store
 import (
 	"time"
 
+	"github.com/lesnoi-kot/karten-backend/src/filestorage"
 	"github.com/uptrace/bun"
 )
 
@@ -17,6 +18,34 @@ const (
 	Yellow  Color = 2
 	Green   Color = 3
 )
+
+type File struct {
+	bun.BaseModel `bun:"table:files"`
+
+	ID              string             `bun:",pk" json:"id"`
+	StorageObjectID filestorage.FileID `json:"storage_object_id"`
+	Name            string             `json:"name"`
+	MimeType        string             `json:"mime_type"`
+	Size            int                `json:"size"`
+}
+
+type ImageThumbnailAssoc struct {
+	bun.BaseModel `bun:"table:image_thumbnails"`
+
+	ID      string `bun:",pk" json:"id"` // Thumbnail File.ID
+	ImageID string `json:"image_id"`     // Original image File.ID
+
+	// ORM many-to-many magic:
+	Original  *File `bun:"rel:belongs-to,join:image_id=id" json:"-"`
+	Thumbnail *File `bun:"rel:belongs-to,join:id=id" json:"-"`
+}
+
+type ImageFile struct {
+	bun.BaseModel `bun:"table:files"`
+	File
+
+	Thumbnails []File `bun:"m2m:image_thumbnails,join:Original=Thumbnail" json:"thumbnails,omitempty"`
+}
 
 type Board struct {
 	bun.BaseModel `bun:"table:boards"`
@@ -38,6 +67,9 @@ type Project struct {
 
 	ID   string `bun:",pk,autoincrement" json:"id"`
 	Name string `json:"name"`
+
+	AvatarID string     `bun:",nullzero" json:"-"`
+	Avatar   *ImageFile `bun:"rel:has-one,join:avatar_id=id" json:"avatar,omitempty"`
 
 	Boards []*Board `bun:"rel:has-many,join:id=project_id" json:"boards,omitempty"`
 }

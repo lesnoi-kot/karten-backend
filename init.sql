@@ -1,9 +1,23 @@
 CREATE SCHEMA karten;
 SET search_path TO karten;
 
+CREATE TABLE files (
+  id                   uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  storage_object_id    text UNIQUE NOT NULL CHECK (length("storage_object_id") > 0),
+  name                 varchar(255) NOT NULL CHECK (length("name") > 0),
+  mime_type            varchar(255) NOT NULL CHECK (length("mime_type") > 0),
+  size                 int NOT NULL
+);
+
+CREATE TABLE image_thumbnails (
+  id          uuid PRIMARY KEY REFERENCES files ON DELETE CASCADE,
+  image_id    uuid             REFERENCES files ON DELETE CASCADE
+);
+
 CREATE TABLE projects (
-  id      uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  name    varchar(32) NOT NULL CHECK (length("name") > 0)
+  id           uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  name         varchar(32) NOT NULL CHECK (length("name") > 0),
+  avatar_id    uuid REFERENCES files ON DELETE SET NULL
 );
 
 CREATE TABLE boards (

@@ -18,8 +18,10 @@ func (s ProjectsStore) Get(ctx context.Context, id string) (*Project, error) {
 	err := s.db.
 		NewSelect().
 		Model(project).
-		Where("id = ?", id).
+		Where("project.id = ?", id).
 		Relation("Boards").
+		Relation("Avatar").
+		Relation("Avatar.Thumbnails").
 		Scan(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -37,11 +39,9 @@ func (s ProjectsStore) GetAll(ctx context.Context) ([]*Project, error) {
 
 	err := s.db.NewSelect().
 		Model(&projects).
-		Relation("Boards", func(sq *bun.SelectQuery) *bun.SelectQuery {
-			return sq.ExcludeColumn("*").Column(
-				"id", "project_id", "name", "date_last_viewed",
-			)
-		}).
+		Relation("Boards").
+		Relation("Avatar").
+		Relation("Avatar.Thumbnails").
 		Scan(ctx)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (s ProjectsStore) GetAll(ctx context.Context) ([]*Project, error) {
 func (s ProjectsStore) Add(ctx context.Context, project *Project) error {
 	_, err := s.db.NewInsert().
 		Model(project).
-		Column("name").
+		Column("name", "avatar_id").
 		Returning("*").
 		Exec(ctx)
 	if err != nil {

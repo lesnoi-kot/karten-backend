@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/lesnoi-kot/karten-backend/src/filestorage"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
@@ -41,50 +42,61 @@ type Entities struct {
 	Comments interface {
 		Repo[Comment]
 	}
+	Files interface {
+		Add(ctx context.Context, opts AddFileOptions) (*File, error)
+		AddImageThumbnail(ctx context.Context, opts AddImageThumbnailOptions) (*File, error)
+	}
 }
 
 type Store struct {
 	Entities
-	db *bun.DB
+	fileStorage filestorage.FileStorage
+	db          *bun.DB
 }
 
 type TxStore struct {
 	Entities
-	tx bun.Tx
+	fileStorage filestorage.FileStorage
+	tx          bun.Tx
 }
 
 type StoreConfig struct {
-	DSN    string
-	Logger *zap.SugaredLogger
-	Debug  bool
+	DSN         string
+	Logger      *zap.SugaredLogger
+	Debug       bool
+	FileStorage filestorage.FileStorage
 }
 
-func NewStore(c StoreConfig) (*Store, error) {
-	stdDB := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(c.DSN)))
+func NewStore(cfg StoreConfig) (*Store, error) {
+	stdDB := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(cfg.DSN)))
 	db := bun.NewDB(stdDB, pgdialect.New())
+
+	db.RegisterModel((*ImageThumbnailAssoc)(nil))
 
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("DB connection error: %w", err)
 	}
 
-	if c.Debug {
+	if cfg.Debug {
 		db.AddQueryHook(bundebug.NewQueryHook(
 			bundebug.WithVerbose(true),
 			// Adapt zap Logger to io.Writer
 			bundebug.WithWriter(
-				&zapio.Writer{Log: c.Logger.Desugar(), Level: zap.DebugLevel},
+				&zapio.Writer{Log: cfg.Logger.Desugar(), Level: zap.DebugLevel},
 			),
 		))
 	}
 
 	store := &Store{
-		db: db,
+		db:          db,
+		fileStorage: cfg.FileStorage,
 		Entities: Entities{
 			Projects:  ProjectsStore{db},
 			Boards:    BoardsStore{db},
 			TaskLists: TaskListsStore{db},
 			Tasks:     TasksStore{db},
 			Comments:  CommentsStore{db},
+			Files:     FilesInfoStore{db, cfg.FileStorage},
 		},
 	}
 
@@ -101,7 +113,7 @@ func (s *Store) BeginTx(ctx context.Context) (*TxStore, error) {
 		return nil, err
 	}
 
-	return newTxStore(tx), nil
+	return newTxStore(tx, s.fileStorage), nil
 }
 
 func (s *Store) RunInTx(ctx context.Context, fn func(ctx context.Context, s *TxStore) error) error {
@@ -110,7 +122,7 @@ func (s *Store) RunInTx(ctx context.Context, fn func(ctx context.Context, s *TxS
 		return err
 	}
 
-	txStore := newTxStore(tx)
+	txStore := newTxStore(tx, s.fileStorage)
 
 	defer func() {
 		if p := recover(); p != nil {
@@ -138,7 +150,7 @@ func (s *TxStore) Rollback() error {
 	return s.tx.Rollback()
 }
 
-func newTxStore(tx bun.Tx) *TxStore {
+func newTxStore(tx bun.Tx, fileStorage filestorage.FileStorage) *TxStore {
 	return &TxStore{
 		tx: tx,
 		Entities: Entities{
@@ -147,6 +159,7 @@ func newTxStore(tx bun.Tx) *TxStore {
 			TaskLists: TaskListsStore{tx},
 			Tasks:     TasksStore{tx},
 			Comments:  CommentsStore{tx},
+			Files:     FilesInfoStore{tx, fileStorage},
 		},
 	}
 }

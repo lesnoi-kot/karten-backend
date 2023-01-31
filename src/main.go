@@ -9,14 +9,16 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/lesnoi-kot/karten-backend/src/api"
+	"github.com/lesnoi-kot/karten-backend/src/filestorage"
 	"github.com/lesnoi-kot/karten-backend/src/store"
 )
 
 type AppConfig struct {
-	StoreDSN       string   `env:"STORE_DSN,notEmpty,unset"`
-	APIBindAddress string   `env:"API_HOST,notEmpty"`
-	AllowOrigins   []string `env:"ALLOW_ORIGINS,notEmpty" envSeparator:","`
-	Debug          bool     `env:"DEBUG"`
+	StoreDSN        string   `env:"STORE_DSN,notEmpty,unset"`
+	APIBindAddress  string   `env:"API_HOST,notEmpty"`
+	FileStoragePath string   `env:"FILE_STORAGE_PATH,notEmpty"`
+	AllowOrigins    []string `env:"ALLOW_ORIGINS,notEmpty" envSeparator:","`
+	Debug           bool     `env:"DEBUG"`
 }
 
 func main() {
@@ -28,10 +30,16 @@ func main() {
 		logger.Fatalw("Config parsing error", "error", err)
 	}
 
+	fileStorage, err := filestorage.NewFileSystemStorage(cfg.FileStoragePath)
+	if err != nil {
+		logger.Fatalw("FileSystemStorage initialization error", "error", err)
+	}
+
 	storeService, err := store.NewStore(store.StoreConfig{
-		DSN:    cfg.StoreDSN,
-		Logger: logger,
-		Debug:  cfg.Debug,
+		DSN:         cfg.StoreDSN,
+		FileStorage: fileStorage,
+		Logger:      logger,
+		Debug:       cfg.Debug,
 	})
 	if err != nil {
 		logger.Fatalw("DB connection error", "error", err)
@@ -40,6 +48,7 @@ func main() {
 	apiService := api.NewAPI(api.APIConfig{
 		Store:        storeService,
 		Logger:       logger,
+		FileStorage:  fileStorage,
 		APIPrefix:    "/api",
 		AllowOrigins: cfg.AllowOrigins,
 		Debug:        cfg.Debug,
@@ -48,7 +57,7 @@ func main() {
 	go handleSignals(apiService)
 
 	if err := apiService.Start(cfg.APIBindAddress); err != nil {
-		logger.Info("API service is closed")
+		logger.Info("API service is stopped")
 
 		if err := storeService.Close(); err != nil {
 			logger.Errorw("Store connection close error", "error", err)
