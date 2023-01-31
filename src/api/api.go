@@ -8,7 +8,9 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/lesnoi-kot/karten-backend/src/filestorage"
 	"github.com/lesnoi-kot/karten-backend/src/store"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapio"
 )
@@ -18,37 +20,45 @@ const (
 )
 
 type APIService struct {
-	handler   *echo.Echo
-	store     *store.Store
-	logger    *zap.SugaredLogger
-	apiPrefix string
+	handler     *echo.Echo
+	store       *store.Store
+	logger      *zap.SugaredLogger
+	fileStorage filestorage.FileStorage
+	apiPrefix   string
 }
 
 type APIConfig struct {
 	Store        *store.Store
 	Logger       *zap.SugaredLogger
+	FileStorage  filestorage.FileStorage
 	APIPrefix    string
 	AllowOrigins []string
 	Debug        bool
 }
 
-func NewAPI(config APIConfig) *APIService {
+func NewAPI(cfg APIConfig) *APIService {
 	api := &APIService{
-		handler:   echo.New(),
-		store:     config.Store,
-		logger:    config.Logger,
-		apiPrefix: config.APIPrefix,
+		handler:     echo.New(),
+		store:       cfg.Store,
+		logger:      cfg.Logger,
+		fileStorage: cfg.FileStorage,
+		apiPrefix:   cfg.APIPrefix,
 	}
 
-	api.handler.Debug = config.Debug
+	api.handler.Debug = cfg.Debug
 	api.handler.Logger.SetOutput(
-		&zapio.Writer{Log: config.Logger.Desugar(), Level: zap.DebugLevel},
+		&zapio.Writer{Log: cfg.Logger.Desugar(), Level: zap.DebugLevel},
 	)
 	api.handler.Validator = newEchoValidator()
 	api.handler.HTTPErrorHandler = api.errorHandler
 
+	securityConfig := middleware.SecureConfig{
+		ContentSecurityPolicy: "default-src 'self';",
+		ReferrerPolicy:        "same-origin",
+	}
+
 	corsConfig := middleware.CORSConfig{
-		AllowOrigins: config.AllowOrigins,
+		AllowOrigins: cfg.AllowOrigins,
 	}
 
 	csrfConfig := middleware.CSRFConfig{
@@ -59,17 +69,22 @@ func NewAPI(config APIConfig) *APIService {
 	api.handler.Pre(middleware.RemoveTrailingSlash())
 	api.handler.Use(
 		middleware.Logger(),
+		middleware.SecureWithConfig(securityConfig),
 		middleware.CORSWithConfig(corsConfig),
 		middleware.CSRFWithConfig(csrfConfig),
+		middleware.BodyLimit("10M"),
 
 		parseError,
 	)
 
-	if config.Debug {
+	if cfg.Debug {
 		// Emulate delay to debug frontend ux.
 		api.handler.Use(emulateDelay)
 
-		// Proxy the frontend application if in the DEBUG mode.
+		// Serve user uploaded media.
+		api.handler.Group("/media", middleware.Static("./media"))
+
+		// Proxy the frontend application in DEBUG mode.
 		spaURL, _ := url.Parse("http://localhost:3000/")
 		balancer := middleware.NewRoundRobinBalancer([]*middleware.ProxyTarget{
 			{URL: spaURL},
@@ -136,6 +151,9 @@ func initBoardsRoute(root *echo.Group, api *APIService) {
 	subroute.GET("/:id", api.getBoard)
 	subroute.PATCH("/:id", api.editBoard)
 	subroute.DELETE("/:id", api.deleteBoard)
+
+	subroute.PUT("/:id/favorite", api.favoriteBoard)
+	subroute.DELETE("/:id/favorite", api.unfavoriteBoard)
 
 	subroute.POST("/:id/task-lists", api.addTaskList)
 }
