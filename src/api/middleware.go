@@ -68,7 +68,7 @@ func parseError(next echo.HandlerFunc) echo.HandlerFunc {
 
 func emulateDelay(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 		return next(c)
 	}
 }

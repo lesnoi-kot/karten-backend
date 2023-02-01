@@ -16,6 +16,8 @@ import (
 type AppConfig struct {
 	StoreDSN        string   `env:"STORE_DSN,notEmpty,unset"`
 	APIBindAddress  string   `env:"API_HOST,notEmpty"`
+	APIPrefix       string   `env:"API_PREFIX"`
+	CookieDomain    string   `env:"COOKIE_DOMAIN,notEmpty"`
 	FileStoragePath string   `env:"FILE_STORAGE_PATH,notEmpty"`
 	AllowOrigins    []string `env:"ALLOW_ORIGINS,notEmpty" envSeparator:","`
 	Debug           bool     `env:"DEBUG"`
@@ -49,7 +51,8 @@ func main() {
 		Store:        storeService,
 		Logger:       logger,
 		FileStorage:  fileStorage,
-		APIPrefix:    "/api",
+		APIPrefix:    cfg.APIPrefix,
+		CookieDomain: cfg.CookieDomain,
 		AllowOrigins: cfg.AllowOrigins,
 		Debug:        cfg.Debug,
 	})

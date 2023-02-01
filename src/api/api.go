@@ -33,6 +33,7 @@ type APIConfig struct {
 	FileStorage  filestorage.FileStorage
 	APIPrefix    string
 	AllowOrigins []string
+	CookieDomain string
 	Debug        bool
 }
 
@@ -53,17 +54,19 @@ func NewAPI(cfg APIConfig) *APIService {
 	api.handler.HTTPErrorHandler = api.errorHandler
 
 	securityConfig := middleware.SecureConfig{
-		ContentSecurityPolicy: "default-src 'self';",
+		ContentSecurityPolicy: "default-src 'none';",
 		ReferrerPolicy:        "same-origin",
 	}
 
 	corsConfig := middleware.CORSConfig{
-		AllowOrigins: cfg.AllowOrigins,
+		AllowOrigins:     cfg.AllowOrigins,
+		AllowCredentials: true, // Allow cookies in cross origin requests.
 	}
 
 	csrfConfig := middleware.CSRFConfig{
 		CookieSameSite: http.SameSiteStrictMode,
-		CookieSecure:   true,
+		CookieDomain:   cfg.CookieDomain,
+		CookieSecure:   !cfg.Debug,
 	}
 
 	api.handler.Pre(middleware.RemoveTrailingSlash())
