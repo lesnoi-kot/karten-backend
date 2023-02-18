@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -581,5 +582,26 @@ func (s *storeSuite) TestTxStore() {
 
 		_, err := s.store.Projects.Get(ctx, "fd5f451d-fac6-4bc7-a677-34adb39a6701")
 		s.Require().NoError(err)
+	})
+}
+
+func (s *storeSuite) TestFilesStore() {
+	s.Run("Get", func() {
+		actual, err := s.store.Files.Add(context.Background(), store.AddFileOptions{
+			Name:     "original",
+			MIMEType: "image/png",
+			Data:     strings.NewReader("blob"),
+		})
+		s.Require().NoError(err)
+
+		expected := &store.Comment{
+			ID:          "4d715efa-8e2f-4488-99d2-5b69e7a43aec",
+			TaskID:      "522a2569-caf5-4c59-8d95-5670ed8378d3",
+			Author:      "User",
+			Text:        "https://www.jamieoliver.com/recipes/vegetables-recipes/the-perfect-chips/",
+			DateCreated: testDate,
+		}
+
+		s.Equal(expected, actual)
 	})
 }

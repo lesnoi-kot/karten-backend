@@ -2,6 +2,16 @@ SET search_path TO karten;
 
 BEGIN;
 
+INSERT INTO files (id, storage_object_id, name, mime_type, size) VALUES
+  ('fd5f451d-fac6-4bc7-a677-34adb39a6701', 'covers_1.jpg', 'Cover', 'image/jpeg', 0),
+  ('2f146153-ee2f-4968-a241-11a4f00bf212', 'covers_2.jpg', 'Cover', 'image/jpeg', 0)
+;
+
+INSERT INTO default_cover_images (id) VALUES
+  ('fd5f451d-fac6-4bc7-a677-34adb39a6701'),
+  ('2f146153-ee2f-4968-a241-11a4f00bf212')
+;
+
 INSERT INTO projects (id, name) VALUES
   ('fd5f451d-fac6-4bc7-a677-34adb39a6701', 'Personal'),
   ('2f146153-ee2f-4968-a241-11a4f00bf212', 'Business'),

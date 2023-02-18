@@ -6,8 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-
-	"github.com/google/uuid"
 )
 
 type FileSystemStorage struct {
@@ -72,13 +70,8 @@ func NewFileSystemStorage(rootPath string) (*FileSystemStorage, error) {
 
 	service := &FileSystemStorage{
 		RootPath:   rootPath,
-		GenerateID: DefaultGenerateID,
+		GenerateID: RandomID,
 	}
 
 	return service, nil
-}
-
-func DefaultGenerateID() FileID {
-	uuid4, _ := uuid.NewRandom()
-	return uuid4.String()
 }

@@ -20,6 +20,7 @@ func (s ProjectsStore) Get(ctx context.Context, id string) (*Project, error) {
 		Model(project).
 		Where("project.id = ?", id).
 		Relation("Boards").
+		Relation("Boards.Cover").
 		Relation("Avatar").
 		Relation("Avatar.Thumbnails").
 		Scan(ctx)
@@ -40,6 +41,7 @@ func (s ProjectsStore) GetAll(ctx context.Context) ([]*Project, error) {
 	err := s.db.NewSelect().
 		Model(&projects).
 		Relation("Boards").
+		Relation("Boards.Cover").
 		Relation("Avatar").
 		Relation("Avatar.Thumbnails").
 		Scan(ctx)

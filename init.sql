@@ -16,6 +16,10 @@ CREATE TABLE image_thumbnails (
   image_id    uuid             REFERENCES files ON DELETE CASCADE
 );
 
+CREATE TABLE default_cover_images (
+  id uuid PRIMARY KEY REFERENCES files ON DELETE CASCADE
+);
+
 CREATE TABLE projects (
   id           uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   short_id     varchar(12) GENERATED ALWAYS AS (substring(id::text, 25)) STORED,

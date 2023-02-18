@@ -127,6 +127,7 @@ func initRoutes(api *APIService) {
 	root := api.handler.Group(api.apiPrefix)
 
 	root.GET("/ping", api.ping)
+	root.GET("/cover-images", api.getCoverImages)
 
 	initProjectsRoute(root, api)
 	initBoardsRoute(root, api)

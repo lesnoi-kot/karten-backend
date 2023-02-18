@@ -47,6 +47,8 @@ type Entities struct {
 	Files interface {
 		Add(ctx context.Context, opts AddFileOptions) (*File, error)
 		AddImageThumbnail(ctx context.Context, opts AddImageThumbnailOptions) (*File, error)
+		GetDefaultCovers(ctx context.Context) ([]ImageFile, error)
+		IsDefaultCover(ctx context.Context, fileID string) bool
 	}
 }
 

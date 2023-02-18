@@ -33,9 +33,10 @@ func (s BoardsStore) Get(ctx context.Context, id string) (*Board, error) {
 	err = s.db.
 		NewSelect().
 		Model(board).
-		Where("id = ?", id).
+		Where("board.id = ?", id).
 		Relation("TaskLists").
 		Relation("TaskLists.Tasks").
+		Relation("Cover").
 		Scan(ctx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -86,7 +87,7 @@ func (s BoardsStore) Update(ctx context.Context, board *Board) error {
 	result, err := s.db.NewUpdate().
 		Model(board).
 		Column("name", "archived", "color", "cover_id").
-		Where("id = ?", board.ID).
+		Where("board.id = ?", board.ID).
 		Returning("*").
 		Exec(ctx)
 	if err != nil {

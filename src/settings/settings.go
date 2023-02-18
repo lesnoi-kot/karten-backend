@@ -1,5 +1,18 @@
 package settings
 
+var AppConfig appConfig
+
+type appConfig struct {
+	StoreDSN        string   `env:"STORE_DSN,notEmpty,unset"`
+	APIBindAddress  string   `env:"API_HOST,notEmpty"`
+	APIPrefix       string   `env:"API_PREFIX"`
+	MediaURL        string   `env:"MEDIA_URL"`
+	CookieDomain    string   `env:"COOKIE_DOMAIN,notEmpty"`
+	FileStoragePath string   `env:"FILE_STORAGE_PATH,notEmpty"`
+	AllowOrigins    []string `env:"ALLOW_ORIGINS,notEmpty" envSeparator:","`
+	Debug           bool     `env:"DEBUG"`
+}
+
 var Projects = struct {
 	AvatarThumbnailSize uint // px
 }{

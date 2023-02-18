@@ -10,38 +10,28 @@ import (
 
 	"github.com/lesnoi-kot/karten-backend/src/api"
 	"github.com/lesnoi-kot/karten-backend/src/filestorage"
+	"github.com/lesnoi-kot/karten-backend/src/settings"
 	"github.com/lesnoi-kot/karten-backend/src/store"
 )
-
-type AppConfig struct {
-	StoreDSN        string   `env:"STORE_DSN,notEmpty,unset"`
-	APIBindAddress  string   `env:"API_HOST,notEmpty"`
-	APIPrefix       string   `env:"API_PREFIX"`
-	CookieDomain    string   `env:"COOKIE_DOMAIN,notEmpty"`
-	FileStoragePath string   `env:"FILE_STORAGE_PATH,notEmpty"`
-	AllowOrigins    []string `env:"ALLOW_ORIGINS,notEmpty" envSeparator:","`
-	Debug           bool     `env:"DEBUG"`
-}
 
 func main() {
 	logger := prepareLogger(os.Getenv("DEBUG") != "")
 	defer logger.Sync()
 
-	var cfg AppConfig
-	if err := env.Parse(&cfg); err != nil {
+	if err := env.Parse(&settings.AppConfig); err != nil {
 		logger.Fatalw("Config parsing error", "error", err)
 	}
 
-	fileStorage, err := filestorage.NewFileSystemStorage(cfg.FileStoragePath)
+	fileStorage, err := filestorage.NewFileSystemStorage(settings.AppConfig.FileStoragePath)
 	if err != nil {
 		logger.Fatalw("FileSystemStorage initialization error", "error", err)
 	}
 
 	storeService, err := store.NewStore(store.StoreConfig{
-		DSN:         cfg.StoreDSN,
+		DSN:         settings.AppConfig.StoreDSN,
 		FileStorage: fileStorage,
 		Logger:      logger,
-		Debug:       cfg.Debug,
+		Debug:       settings.AppConfig.Debug,
 	})
 	if err != nil {
 		logger.Fatalw("DB connection error", "error", err)
@@ -51,15 +41,15 @@ func main() {
 		Store:        storeService,
 		Logger:       logger,
 		FileStorage:  fileStorage,
-		APIPrefix:    cfg.APIPrefix,
-		CookieDomain: cfg.CookieDomain,
-		AllowOrigins: cfg.AllowOrigins,
-		Debug:        cfg.Debug,
+		APIPrefix:    settings.AppConfig.APIPrefix,
+		CookieDomain: settings.AppConfig.CookieDomain,
+		AllowOrigins: settings.AppConfig.AllowOrigins,
+		Debug:        settings.AppConfig.Debug,
 	})
 
 	go handleSignals(apiService)
 
-	if err := apiService.Start(cfg.APIBindAddress); err != nil {
+	if err := apiService.Start(settings.AppConfig.APIBindAddress); err != nil {
 		logger.Info("API service is stopped")
 
 		if err := storeService.Close(); err != nil {

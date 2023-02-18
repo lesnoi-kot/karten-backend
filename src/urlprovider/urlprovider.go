@@ -1,11 +1,13 @@
 package urlprovider
 
 import (
-	"fmt"
+	"net/url"
 
+	"github.com/lesnoi-kot/karten-backend/src/settings"
 	"github.com/lesnoi-kot/karten-backend/src/store"
 )
 
 func GetFileURL(file *store.File) string {
-	return fmt.Sprintf("media/%s", file.StorageObjectID)
+	url, _ := url.JoinPath(settings.AppConfig.MediaURL, file.StorageObjectID)
+	return url
 }

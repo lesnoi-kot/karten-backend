@@ -47,6 +47,12 @@ type ImageFile struct {
 	Thumbnails []File `bun:"m2m:image_thumbnails,join:Original=Thumbnail" json:"thumbnails,omitempty"`
 }
 
+type CoverImageToFileAssoc struct {
+	bun.BaseModel `bun:"table:default_cover_images"`
+
+	ID string `bun:",pk" json:"id"`
+}
+
 type Board struct {
 	bun.BaseModel `bun:"table:boards"`
 
@@ -59,22 +65,23 @@ type Board struct {
 	DateCreated    time.Time `json:"date_created"`
 	DateLastViewed time.Time `json:"date_last_viewed"`
 	Color          Color     `json:"color"`
-	CoverID        string    `bun:"cover_id,nullzero" json:"cover_id,omitempty"`
+	CoverID        *string   `bun:"cover_id,nullzero" json:"cover_id,omitempty"`
 
 	TaskLists []*TaskList `bun:"rel:has-many,join:id=board_id" json:"task_lists,omitempty"`
+	Cover     *File       `bun:"rel:has-one,join:cover_id=id" json:"cover,omitempty"`
 }
 
 type Project struct {
 	bun.BaseModel `bun:"table:projects"`
 
-	ID      string `bun:",pk,autoincrement" json:"id"`
-	ShortID string `json:"short_id"`
-	Name    string `json:"name"`
+	ID      string `bun:",pk,autoincrement"`
+	ShortID string
+	Name    string
 
-	AvatarID string     `bun:",nullzero" json:"-"`
-	Avatar   *ImageFile `bun:"rel:has-one,join:avatar_id=id" json:"avatar,omitempty"`
+	AvatarID string     `bun:",nullzero"`
+	Avatar   *ImageFile `bun:"rel:has-one,join:avatar_id=id"`
 
-	Boards []*Board `bun:"rel:has-many,join:id=project_id" json:"boards,omitempty"`
+	Boards []*Board `bun:"rel:has-many,join:id=project_id"`
 }
 
 type Task struct {

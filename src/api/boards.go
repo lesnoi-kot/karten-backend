@@ -57,7 +57,6 @@ func (api *APIService) editBoard(c echo.Context) error {
 		Name     string       `json:"name" validate:"required,min=1,max=32"`
 		Archived *bool        `json:"archived"`
 		Color    *store.Color `json:"color"`
-		CoverURL *string      `json:"cover_url"`
 	}
 
 	if err := c.Bind(&body); err != nil {

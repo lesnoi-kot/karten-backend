@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"io"
+	"path"
 
 	"github.com/lesnoi-kot/karten-backend/src/filestorage"
 	"github.com/uptrace/bun"
@@ -23,7 +24,9 @@ type AddFileOptions struct {
 }
 
 func (s FilesInfoStore) Add(ctx context.Context, opts AddFileOptions) (*File, error) {
-	storageID, bytesCount, err := s.fileStorage.Add(opts.Data)
+	ext := path.Ext(opts.Name)
+	storageID := filestorage.RandomID() + ext
+	bytesCount, err := s.fileStorage.Set(storageID, opts.Data)
 	if err != nil {
 		return nil, err
 	}
@@ -62,4 +65,29 @@ func (s FilesInfoStore) AddImageThumbnail(ctx context.Context, opts AddImageThum
 
 	_, err = s.db.NewInsert().Model(link).Exec(ctx)
 	return thumbnail, err
+}
+
+func (s FilesInfoStore) GetDefaultCovers(ctx context.Context) ([]ImageFile, error) {
+	var covers []ImageFile
+	subquery := s.db.NewSelect().Model((*CoverImageToFileAssoc)(nil)).Limit(4)
+
+	err := s.db.NewSelect().
+		Model(&covers).
+		Relation("Thumbnails").
+		Where("id in (?)", subquery).
+		Scan(ctx)
+
+	return covers, err
+}
+
+func (s FilesInfoStore) IsDefaultCover(ctx context.Context, fileID string) bool {
+	exists, err := s.db.NewSelect().
+		Model((*CoverImageToFileAssoc)(nil)).
+		Where("id = ?", fileID).
+		Exists(ctx)
+	if err != nil {
+		return false
+	}
+
+	return exists
 }
