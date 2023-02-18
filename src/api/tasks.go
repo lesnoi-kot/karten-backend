@@ -10,6 +10,20 @@ import (
 	"github.com/lesnoi-kot/karten-backend/src/store"
 )
 
+type TaskDTO struct {
+	ID          string     `json:"id"`
+	ShortID     string     `json:"short_id"`
+	TaskListID  string     `json:"task_list_id"`
+	Name        string     `json:"name"`
+	Text        string     `json:"text"`
+	Position    int64      `json:"position"`
+	Archived    bool       `json:"archived"`
+	DateCreated time.Time  `json:"date_created"`
+	DueDate     *time.Time `json:"due_date,omitempty"`
+
+	Comments []*CommentDTO `json:"comments,omitempty"`
+}
+
 func (api *APIService) getTask(c echo.Context) error {
 	id := c.Param("id")
 	task, err := api.store.Tasks.Get(context.Background(), id)

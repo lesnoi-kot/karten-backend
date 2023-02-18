@@ -12,12 +12,12 @@ import (
 )
 
 type ProjectDTO struct {
-	ID                 string         `json:"id"`
-	ShortID            string         `json:"short_id"`
-	Name               string         `json:"name"`
-	AvatarURL          string         `json:"avatar_url,omitempty"`
-	AvatarThumbnailURL string         `json:"avatar_thumbnail_url,omitempty"`
-	Boards             []*store.Board `json:"boards,omitempty"`
+	ID                 string      `json:"id"`
+	ShortID            string      `json:"short_id"`
+	Name               string      `json:"name"`
+	AvatarURL          string      `json:"avatar_url,omitempty"`
+	AvatarThumbnailURL string      `json:"avatar_thumbnail_url,omitempty"`
+	Boards             []*BoardDTO `json:"boards,omitempty"`
 }
 
 func (api *APIService) getProjects(c echo.Context) error {

@@ -4,10 +4,23 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/lesnoi-kot/karten-backend/src/store"
 )
+
+type TaskListDTO struct {
+	ID          string      `json:"id"`
+	BoardID     string      `json:"board_id"`
+	Name        string      `json:"name"`
+	Archived    bool        `json:"archived"`
+	Position    int64       `json:"position"`
+	DateCreated time.Time   `json:"date_created"`
+	Color       store.Color `json:"color"`
+
+	Tasks []*TaskDTO `json:"tasks,omitempty"`
+}
 
 func (api *APIService) getTaskList(c echo.Context) error {
 	id := c.Param("id")

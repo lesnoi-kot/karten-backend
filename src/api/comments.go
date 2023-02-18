@@ -4,10 +4,19 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/lesnoi-kot/karten-backend/src/store"
 )
+
+type CommentDTO struct{
+	ID          string    `json:"id"`
+	TaskID      string    `json:"task_id"`
+	Author      string    `json:"author"`
+	Text        string    `json:"text"`
+	DateCreated time.Time `json:"date_created"`
+}
 
 func (api *APIService) addComment(c echo.Context) error {
 	var body struct {
