@@ -6,5 +6,6 @@
     ],
     "gopls": {
       "formatting.gofumpt": true
-    }
+    },
+    "editor.rulers": [80, 100]
 }

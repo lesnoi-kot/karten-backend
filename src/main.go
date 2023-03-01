@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/caarlos0/env/v6"
 	"go.uber.org/zap"
@@ -21,6 +22,8 @@ func main() {
 	if err := env.Parse(&settings.AppConfig); err != nil {
 		logger.Fatalw("Config parsing error", "error", err)
 	}
+
+	printConfigs(logger)
 
 	fileStorage, err := filestorage.NewFileSystemStorage(settings.AppConfig.FileStoragePath)
 	if err != nil {
@@ -83,4 +86,12 @@ func handleSignals(apiService *api.APIService) {
 
 	<-quit
 	apiService.Shutdown()
+}
+
+func printConfigs(logger *zap.SugaredLogger) {
+	logger.Infow("Karten config",
+		"Debug", settings.AppConfig.Debug,
+		"APIBindAddress", settings.AppConfig.APIBindAddress,
+		"AllowOrigins", strings.Join(settings.AppConfig.AllowOrigins, ", "),
+	)
 }
