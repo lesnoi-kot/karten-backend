@@ -29,6 +29,8 @@ type Entities struct {
 		Repo[Project]
 
 		GetAll(ctx context.Context) ([]*Project, error)
+		Clear(ctx context.Context, id string) error
+		DeleteAll(ctx context.Context) error
 	}
 	Boards interface {
 		Repo[Board]

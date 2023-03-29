@@ -141,12 +141,14 @@ func initProjectsRoute(root *echo.Group, api *APIService) {
 
 	subroute.GET("", api.getProjects)
 	subroute.POST("", api.addProject)
+	subroute.DELETE("", api.deleteProjects)
 
 	subroute.GET("/:id", api.getProject)
 	subroute.PATCH("/:id", api.editProject)
 	subroute.DELETE("/:id", api.deleteProject)
 
 	subroute.POST("/:id/boards", api.addBoard)
+	subroute.DELETE("/:id/boards", api.clearProject)
 }
 
 func initBoardsRoute(root *echo.Group, api *APIService) {

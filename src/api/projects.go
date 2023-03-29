@@ -133,6 +133,24 @@ func (api *APIService) deleteProject(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
+func (api *APIService) deleteProjects(c echo.Context) error {
+	if err := api.store.Projects.DeleteAll(context.Background()); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (api *APIService) clearProject(c echo.Context) error {
+	id := c.Param("id")
+
+	if err := api.store.Projects.Clear(context.Background(), id); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
 func (api *APIService) editProject(c echo.Context) error {
 	var body struct {
 		Name string `json:"name" validate:"required,min=1,max=32"`

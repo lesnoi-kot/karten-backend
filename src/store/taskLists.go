@@ -46,7 +46,7 @@ func (s TaskListsStore) Add(ctx context.Context, item *TaskList) error {
 func (s TaskListsStore) Update(ctx context.Context, item *TaskList) error {
 	result, err := s.db.NewUpdate().
 		Model(item).
-		Column("name").
+		Column("name", "position").
 		Where("id = ?", item.ID).
 		Returning("*").
 		Exec(ctx)

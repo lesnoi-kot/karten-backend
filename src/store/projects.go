@@ -98,3 +98,17 @@ func (s ProjectsStore) Delete(ctx context.Context, id string) error {
 
 	return nil
 }
+
+func (s ProjectsStore) Clear(ctx context.Context, id string) error {
+	_, err := s.db.NewDelete().
+		Model((*Board)(nil)).
+		Where("project_id = ?", id).
+		Exec(ctx)
+
+	return err
+}
+
+func (s ProjectsStore) DeleteAll(ctx context.Context) error {
+	_, err := s.db.NewTruncateTable().Model((*Project)(nil)).Exec(ctx)
+	return err
+}
