@@ -19,6 +19,18 @@ const (
 	Green   Color = 3
 )
 
+type User struct {
+	bun.BaseModel `bun:"table:users"`
+
+	ID          int `bun:",pk,autoincrement"`
+	SocialID    string
+	Name        string
+	Login       string
+	Email       string
+	URL         string
+	DateCreated time.Time
+}
+
 type File struct {
 	bun.BaseModel `bun:"table:files"`
 

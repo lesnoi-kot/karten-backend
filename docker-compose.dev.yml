@@ -10,6 +10,8 @@ services:
       ALLOW_ORIGINS: ${ALLOW_ORIGINS:-http://127.0.0.1:3000}
       MEDIA_URL: ${MEDIA_URL:-http://127.0.0.1:4001}
       COOKIE_DOMAIN: $COOKIE_DOMAIN
+    env_file:
+      - .env
     volumes:
       - .:/app
     working_dir: /app

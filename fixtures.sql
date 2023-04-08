@@ -2,6 +2,8 @@ SET search_path TO karten;
 
 BEGIN;
 
+INSERT INTO users (social_id, name) VALUES ('karten', 'guest');
+
 INSERT INTO files (id, storage_object_id, name, mime_type, size) VALUES
   ('fd5f451d-fac6-4bc7-a677-34adb39a6701', 'covers_1.jpg', 'Cover', 'image/jpeg', 0),
   ('2f146153-ee2f-4968-a241-11a4f00bf212', 'covers_2.jpg', 'Cover', 'image/jpeg', 0)

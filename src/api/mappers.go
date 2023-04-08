@@ -138,3 +138,17 @@ func commentToDTO(comment *store.Comment) *CommentDTO {
 
 	return dto
 }
+
+func userToDTO(user *store.User) *UserDTO {
+	dto := &UserDTO{
+		ID:          user.ID,
+		SocialID:    user.SocialID,
+		Name:        user.Name,
+		Login:       user.Login,
+		Email:       user.Email,
+		URL:         user.URL,
+		DateCreated: user.DateCreated,
+	}
+
+	return dto
+}

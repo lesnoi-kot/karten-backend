@@ -6,9 +6,12 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/gorilla/sessions"
+	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/lesnoi-kot/karten-backend/src/filestorage"
+	"github.com/lesnoi-kot/karten-backend/src/settings"
 	"github.com/lesnoi-kot/karten-backend/src/store"
 
 	"go.uber.org/zap"
@@ -25,12 +28,14 @@ type APIService struct {
 	logger      *zap.SugaredLogger
 	fileStorage filestorage.FileStorage
 	apiPrefix   string
+	frontendURL string
 }
 
 type APIConfig struct {
 	Store        *store.Store
 	Logger       *zap.SugaredLogger
 	FileStorage  filestorage.FileStorage
+	FrontendURL  string
 	APIPrefix    string
 	AllowOrigins []string
 	CookieDomain string
@@ -44,6 +49,7 @@ func NewAPI(cfg APIConfig) *APIService {
 		logger:      cfg.Logger,
 		fileStorage: cfg.FileStorage,
 		apiPrefix:   cfg.APIPrefix,
+		frontendURL: cfg.FrontendURL,
 	}
 
 	api.handler.Debug = cfg.Debug
@@ -76,6 +82,10 @@ func NewAPI(cfg APIConfig) *APIService {
 		middleware.CORSWithConfig(corsConfig),
 		middleware.CSRFWithConfig(csrfConfig),
 		middleware.BodyLimit("10M"),
+
+		session.Middleware(
+			sessions.NewFilesystemStore("", []byte(settings.AppConfig.SessionsSecretKey)),
+		),
 
 		parseError,
 	)
@@ -134,6 +144,14 @@ func initRoutes(api *APIService) {
 	initTaskListsRoute(root, api)
 	initTasksRoute(root, api)
 	initCommentsRoute(root, api)
+	initUserRoutes(root, api)
+}
+
+func initUserRoutes(root *echo.Group, api *APIService) {
+	root.GET("/oauth-callback", api.oauthCallback)
+
+	subroute := root.Group("/users")
+	subroute.GET("/self", api.getCurrentUser)
 }
 
 func initProjectsRoute(root *echo.Group, api *APIService) {
