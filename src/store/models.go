@@ -8,22 +8,19 @@ import (
 )
 
 type (
-	Color      = int
+	UserID     = int
+	FileID     = string
+	EntityID   = string
 	DateString = string
-)
-
-const (
-	NoColor Color = 0
-	Red     Color = 1
-	Yellow  Color = 2
-	Green   Color = 3
+	Color      = int
 )
 
 type User struct {
 	bun.BaseModel `bun:"table:users"`
 
-	ID          int `bun:",pk,autoincrement"`
+	ID          UserID `bun:",pk,autoincrement"`
 	SocialID    string
+	AvatarID    FileID `bun:",nullzero"`
 	Name        string
 	Login       string
 	Email       string
@@ -34,7 +31,7 @@ type User struct {
 type File struct {
 	bun.BaseModel `bun:"table:files"`
 
-	ID              string             `bun:",pk" json:"id"`
+	ID              FileID             `bun:",pk" json:"id"`
 	StorageObjectID filestorage.FileID `json:"storage_object_id"`
 	Name            string             `json:"name"`
 	MimeType        string             `json:"mime_type"`
@@ -44,8 +41,8 @@ type File struct {
 type ImageThumbnailAssoc struct {
 	bun.BaseModel `bun:"table:image_thumbnails"`
 
-	ID      string `bun:",pk" json:"id"` // Thumbnail File.ID
-	ImageID string `json:"image_id"`     // Original image File.ID
+	ID      FileID `bun:",pk"` // Thumbnail File.ID
+	ImageID FileID // Original image File.ID
 
 	// ORM many-to-many magic:
 	Original  *File `bun:"rel:belongs-to,join:image_id=id" json:"-"`
@@ -62,35 +59,37 @@ type ImageFile struct {
 type CoverImageToFileAssoc struct {
 	bun.BaseModel `bun:"table:default_cover_images"`
 
-	ID string `bun:",pk" json:"id"`
+	ID EntityID `bun:",pk" json:"id"`
 }
 
 type Board struct {
 	bun.BaseModel `bun:"table:boards"`
 
-	ID             string    `bun:",pk" json:"id"`
-	ShortID        string    `json:"short_id"`
-	Name           string    `json:"name"`
-	ProjectID      string    `json:"project_id"`
-	Archived       bool      `json:"archived"`
-	Favorite       bool      `json:"favorite"`
-	DateCreated    time.Time `json:"date_created"`
-	DateLastViewed time.Time `json:"date_last_viewed"`
-	Color          Color     `json:"color"`
-	CoverID        *string   `bun:"cover_id,nullzero" json:"cover_id,omitempty"`
+	ID             EntityID `bun:",pk"`
+	UserID         UserID
+	ShortID        string
+	Name           string
+	ProjectID      string
+	Archived       bool
+	Favorite       bool
+	DateCreated    time.Time
+	DateLastViewed time.Time
+	Color          Color
+	CoverID        *FileID `bun:"cover_id,nullzero"`
 
-	TaskLists []*TaskList `bun:"rel:has-many,join:id=board_id" json:"task_lists,omitempty"`
-	Cover     *File       `bun:"rel:has-one,join:cover_id=id" json:"cover,omitempty"`
+	TaskLists []*TaskList `bun:"rel:has-many,join:id=board_id"`
+	Cover     *File       `bun:"rel:has-one,join:cover_id=id"`
 }
 
 type Project struct {
 	bun.BaseModel `bun:"table:projects"`
 
-	ID      string `bun:",pk,autoincrement"`
+	ID      EntityID `bun:",pk,autoincrement"`
+	UserID  UserID
 	ShortID string
 	Name    string
 
-	AvatarID string     `bun:",nullzero"`
+	AvatarID FileID     `bun:",nullzero"`
 	Avatar   *ImageFile `bun:"rel:has-one,join:avatar_id=id"`
 
 	Boards []*Board `bun:"rel:has-many,join:id=project_id"`
@@ -99,7 +98,8 @@ type Project struct {
 type Task struct {
 	bun.BaseModel `bun:"table:tasks"`
 
-	ID          string     `bun:",pk,autoincrement" json:"id"`
+	ID          EntityID `bun:",pk,autoincrement" json:"id"`
+	UserID      UserID
 	ShortID     string     `json:"short_id"`
 	TaskListID  string     `bun:"task_list_id" json:"task_list_id"`
 	Name        string     `json:"name"`
@@ -115,7 +115,8 @@ type Task struct {
 type TaskList struct {
 	bun.BaseModel `bun:"table:task_lists"`
 
-	ID          string    `bun:",pk" json:"id"`
+	ID          EntityID `bun:",pk" json:"id"`
+	UserID      UserID
 	BoardID     string    `bun:"board_id" json:"board_id"`
 	Name        string    `json:"name"`
 	Archived    bool      `json:"archived"`
@@ -129,9 +130,9 @@ type TaskList struct {
 type Comment struct {
 	bun.BaseModel `bun:"table:comments"`
 
-	ID          string    `bun:",pk" json:"id"`
-	TaskID      string    `json:"task_id"`
-	Author      string    `json:"author"`
-	Text        string    `json:"text"`
-	DateCreated time.Time `json:"date_created"`
+	ID          EntityID `bun:",pk" json:"id"`
+	UserID      UserID
+	TaskID      string
+	Text        string
+	DateCreated time.Time
 }

@@ -131,7 +131,7 @@ func commentToDTO(comment *store.Comment) *CommentDTO {
 	dto := &CommentDTO{
 		ID:          comment.ID,
 		TaskID:      comment.TaskID,
-		Author:      comment.Author,
+		UserID:      comment.UserID,
 		Text:        comment.Text,
 		DateCreated: comment.DateCreated,
 	}

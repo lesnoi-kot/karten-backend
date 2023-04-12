@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -22,25 +23,43 @@ type UserDTO struct {
 }
 
 func (api *APIService) getCurrentUser(c echo.Context) error {
+	userID, err := getUserID(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, Error(err.Error()))
+	}
+
+	user, err := api.store.Users.Get(context.Background(), userID)
+
+	if errors.Is(err, store.ErrNotFound) {
+		return c.JSON(http.StatusUnauthorized, Error("User not found"))
+	} else if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, OK(userToDTO(user)))
+}
+
+func (api *APIService) logOut(c echo.Context) error {
 	sess, err := session.Get(USER_SESSION_KEY, c)
 	if err != nil {
 		return c.JSON(http.StatusUnauthorized, Error("Cannot retrieve session"))
 	}
 
-	userID, ok := sess.Values[SESSION_KEY_USER_ID]
-	if !ok {
-		return c.JSON(http.StatusUnauthorized, Error("Empty session"))
+	sess.Options.MaxAge = -1
+	if err := sess.Save(c.Request(), c.Response()); err != nil {
+		return fmt.Errorf("Session update error: %w", err)
 	}
 
-	if _, ok = userID.(int); !ok {
-		return c.JSON(http.StatusBadRequest, Error("Invalid session"))
+	return c.NoContent(http.StatusOK)
+}
+
+func (api *APIService) guestLogIn(c echo.Context) error {
+	if err := setUserSession(c, store.GuestUserID); err != nil {
+		return err
 	}
 
-	user, err := api.store.Users.Get(context.Background(), userID.(int))
-
-	if errors.Is(err, store.ErrNotFound) {
-		return c.JSON(http.StatusUnauthorized, Error("User not found"))
-	} else if err != nil {
+	user, err := api.store.Users.Get(context.Background(), store.GuestUserID)
+	if err != nil {
 		return err
 	}
 

@@ -35,9 +35,9 @@ type Entities struct {
 	Projects interface {
 		Repo[Project]
 
-		GetAll(ctx context.Context) ([]*Project, error)
-		Clear(ctx context.Context, id string) error
-		DeleteAll(ctx context.Context) error
+		GetAll(ctx context.Context, userID UserID) ([]*Project, error)
+		Clear(ctx context.Context, projectID string) error
+		DeleteAll(ctx context.Context, userID UserID) error
 	}
 	Boards interface {
 		Repo[Board]
@@ -54,17 +54,19 @@ type Entities struct {
 		Repo[Comment]
 	}
 	Files interface {
+		Get(ctx context.Context, fileID FileID) (*File, error)
 		Add(ctx context.Context, opts AddFileOptions) (*File, error)
 		AddImageThumbnail(ctx context.Context, opts AddImageThumbnailOptions) (*File, error)
 		GetDefaultCovers(ctx context.Context) ([]ImageFile, error)
-		IsDefaultCover(ctx context.Context, fileID string) bool
+		IsDefaultCover(ctx context.Context, fileID FileID) bool
+		IsImage(ctx context.Context, fileID FileID) bool
 	}
 }
 
 type Store struct {
 	Entities
 	fileStorage filestorage.FileStorage
-	db          *bun.DB
+	ORM         *bun.DB
 }
 
 type TxStore struct {
@@ -101,7 +103,7 @@ func NewStore(cfg StoreConfig) (*Store, error) {
 	}
 
 	store := &Store{
-		db:          db,
+		ORM:         db,
 		fileStorage: cfg.FileStorage,
 		Entities: Entities{
 			Users:     UsersStore{db},
@@ -118,11 +120,11 @@ func NewStore(cfg StoreConfig) (*Store, error) {
 }
 
 func (s *Store) Close() error {
-	return s.db.Close()
+	return s.ORM.Close()
 }
 
 func (s *Store) BeginTx(ctx context.Context) (*TxStore, error) {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
+	tx, err := s.ORM.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +133,7 @@ func (s *Store) BeginTx(ctx context.Context) (*TxStore, error) {
 }
 
 func (s *Store) RunInTx(ctx context.Context, fn func(ctx context.Context, s *TxStore) error) error {
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
+	tx, err := s.ORM.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}

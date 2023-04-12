@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"path"
+	"strings"
 
 	"github.com/lesnoi-kot/karten-backend/src/filestorage"
 	"github.com/uptrace/bun"
@@ -80,7 +81,7 @@ func (s FilesInfoStore) GetDefaultCovers(ctx context.Context) ([]ImageFile, erro
 	return covers, err
 }
 
-func (s FilesInfoStore) IsDefaultCover(ctx context.Context, fileID string) bool {
+func (s FilesInfoStore) IsDefaultCover(ctx context.Context, fileID FileID) bool {
 	exists, err := s.db.NewSelect().
 		Model((*CoverImageToFileAssoc)(nil)).
 		Where("id = ?", fileID).
@@ -90,4 +91,35 @@ func (s FilesInfoStore) IsDefaultCover(ctx context.Context, fileID string) bool 
 	}
 
 	return exists
+}
+
+func (s FilesInfoStore) IsImage(ctx context.Context, fileID FileID) bool {
+	exists, err := s.db.NewSelect().
+		Model((*File)(nil)).
+		Where("id = ?", fileID).
+		Where("mime_type LIKE ?", "image/%").
+		Exists(ctx)
+	if err != nil {
+		return false
+	}
+
+	return exists
+}
+
+func (s FilesInfoStore) Get(ctx context.Context, fileID FileID) (*File, error) {
+	file := new(File)
+	err := s.db.NewSelect().
+		Model(file).
+		Where("id = ?", fileID).
+		Scan(ctx)
+
+	return file, err
+}
+
+func (file *File) IsImage() bool {
+	if file == nil {
+		return false
+	}
+
+	return strings.HasPrefix(file.MimeType, "image/")
 }

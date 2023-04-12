@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/sessions"
-	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/lesnoi-kot/karten-backend/src/api/oauth"
 	"github.com/lesnoi-kot/karten-backend/src/settings"
@@ -61,19 +59,9 @@ func (api *APIService) oauthCallback(c echo.Context) error {
 		return err
 	}
 
-	sess, _ := session.Get(USER_SESSION_KEY, c)
-	sess.Values[SESSION_KEY_USER_ID] = db_user.ID
-	sess.Options = &sessions.Options{
-		Path:     "/",
-		Domain:   settings.AppConfig.CookieDomain,
-		MaxAge:   30 * 24 * 60 * 60,
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-	}
-	if err := sess.Save(c.Request(), c.Response()); err != nil {
-		return fmt.Errorf("Session update rror: %w", err)
+	if err := setUserSession(c, db_user.ID); err != nil {
+		return err
 	}
 
-	api.logger.Debugf("session: %v, user: %v", sess.Values, userInfo)
 	return c.Redirect(http.StatusTemporaryRedirect, settings.AppConfig.FrontendURL)
 }

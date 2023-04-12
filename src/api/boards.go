@@ -2,14 +2,13 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/lesnoi-kot/karten-backend/src/modules/images"
 	"github.com/lesnoi-kot/karten-backend/src/store"
+	"github.com/lesnoi-kot/karten-backend/src/userservice"
 )
 
 type BoardDTO struct {
@@ -28,8 +27,10 @@ type BoardDTO struct {
 }
 
 func (api *APIService) getBoard(c echo.Context) error {
-	id := c.Param("id")
-	board, err := api.store.Boards.Get(context.Background(), id)
+	boardID := c.Param("id")
+	userService := api.getUserService(c)
+
+	board, err := userService.GetBoard(&userservice.GetBoardOptions{BoardID: boardID})
 	if err != nil {
 		return err
 	}
@@ -38,12 +39,10 @@ func (api *APIService) getBoard(c echo.Context) error {
 }
 
 func (api *APIService) addBoard(c echo.Context) error {
-	projectID := c.Param("id")
-
 	var body struct {
-		Name    string      `form:"name" json:"name" validate:"required,min=1,max=32"`
-		Color   store.Color `form:"color" json:"color"`
-		CoverID *string     `form:"cover_id" json:"cover_id"`
+		Name    string        `json:"name" validate:"required,min=1,max=32"`
+		Color   store.Color   `json:"color"`
+		CoverID *store.FileID `json:"cover_id"`
 	}
 
 	if err := c.Bind(&body); err != nil {
@@ -55,48 +54,23 @@ func (api *APIService) addBoard(c echo.Context) error {
 		return err
 	}
 
+	projectID := c.Param("id")
+	userID, _ := getUserID(c)
 	board := &store.Board{
 		ProjectID: projectID,
+		UserID:    userID,
 		Name:      body.Name,
 		Color:     body.Color,
-		CoverID:   body.CoverID,
+		CoverID:   nil,
 	}
 
-	if body.CoverID != nil && api.store.Files.IsDefaultCover(context.Background(), *body.CoverID) {
-		board.CoverID = body.CoverID
-	}
+	if body.CoverID != nil {
+		cover, _ := api.store.Files.Get(context.Background(), *body.CoverID)
 
-	if coverFileHeader, err := c.FormFile("cover"); board.CoverID == nil && err == nil {
-		coverData, err := coverFileHeader.Open()
-		if err != nil {
-			return err
+		if cover.IsImage() {
+			board.CoverID = body.CoverID
+			board.Cover = cover
 		}
-
-		image, err := images.ParseImage(coverData)
-		if err != nil {
-			return echo.
-				NewHTTPError(http.StatusBadRequest, "Image can't be decoded").
-				SetInternal(err)
-		}
-
-		coverData, err = coverFileHeader.Open()
-		if err != nil {
-			return err
-		}
-
-		coverFile, err := api.store.Files.Add(context.Background(), store.AddFileOptions{
-			Name:     coverFileHeader.Filename,
-			Data:     coverData,
-			MIMEType: image.MIMEType,
-		})
-		if err != nil {
-			return fmt.Errorf("Save image for new board error: %w", err)
-		}
-
-		api.logger.Infof("Added cover image for board %s: %s", board.Name, coverFile.ID)
-
-		board.CoverID = &coverFile.ID
-		board.Cover = coverFile
 	}
 
 	if err := api.store.Boards.Add(context.Background(), board); err != nil {
@@ -107,47 +81,52 @@ func (api *APIService) addBoard(c echo.Context) error {
 }
 
 func (api *APIService) editBoard(c echo.Context) error {
-	id := c.Param("id")
-
 	var body struct {
-		Name     string       `json:"name" validate:"required,min=1,max=32"`
-		Archived *bool        `json:"archived"`
-		Color    *store.Color `json:"color"`
+		Name     *string       `json:"name" validate:"omitempty,min=1,max=32"`
+		Archived *bool         `json:"archived"`
+		Color    *store.Color  `json:"color"`
+		CoverID  *store.FileID `json:"cover_id"`
 	}
 
 	if err := c.Bind(&body); err != nil {
 		return err
 	}
 
-	body.Name = strings.TrimSpace(body.Name)
+	*body.Name = strings.TrimSpace(*body.Name)
 	if err := c.Validate(&body); err != nil {
 		return err
 	}
 
-	board, err := api.store.Boards.Get(context.Background(), id)
+	userService := api.getUserService(c)
+	boardID := c.Param("id")
+	board, err := userService.GetBoard(&userservice.GetBoardOptions{
+		BoardID:                  boardID,
+		SkipDateLastViewedUpdate: true,
+	})
 	if err != nil {
 		return err
 	}
 
-	board.Name = body.Name
-	if body.Archived != nil {
-		board.Archived = *body.Archived
-	}
-	if body.Color != nil {
-		board.Color = *body.Color
-	}
-
-	if err = api.store.Boards.Update(context.Background(), board); err != nil {
+	err = userService.UpdateBoard(&userservice.EditBoardOptions{
+		BoardID:  board.ID,
+		Name:     body.Name,
+		Archived: body.Archived,
+		Color:    body.Color,
+		CoverID:  body.CoverID,
+	})
+	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, OK(board))
+	return c.JSON(http.StatusOK, OK(boardToDTO(board)))
 }
 
 func (api *APIService) deleteBoard(c echo.Context) error {
-	id := c.Param("id")
+	boardID := c.Param("id")
+	userService := api.getUserService(c)
 
-	if err := api.store.Boards.Delete(context.Background(), id); err != nil {
+	err := userService.DeleteBoard(&userservice.DeleteBoardOptions{BoardID: boardID})
+	if err != nil {
 		return err
 	}
 
@@ -155,12 +134,14 @@ func (api *APIService) deleteBoard(c echo.Context) error {
 }
 
 func (api *APIService) setFavoriteBoard(c echo.Context, favorite bool) error {
-	board := &store.Board{
-		ID:       c.Param("id"),
-		Favorite: favorite,
-	}
+	boardID := c.Param("id")
+	userService := api.getUserService(c)
 
-	if err := api.store.Boards.UpdateColumns(context.Background(), board, "favorite"); err != nil {
+	err := userService.UpdateBoard(&userservice.EditBoardOptions{
+		BoardID:  boardID,
+		Favorite: &favorite,
+	})
+	if err != nil {
 		return err
 	}
 

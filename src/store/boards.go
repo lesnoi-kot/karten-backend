@@ -24,7 +24,7 @@ func (s BoardsStore) Get(ctx context.Context, id string) (*Board, error) {
 		return nil, err
 	}
 
-	if noRowsAffected(updateResult) {
+	if NoRowsAffected(updateResult) {
 		return nil, ErrNotFound
 	}
 
@@ -73,7 +73,7 @@ func (s BoardsStore) Add(ctx context.Context, board *Board) error {
 	_, err := s.db.
 		NewInsert().
 		Model(board).
-		Column("project_id", "name", "color", "cover_id").
+		Column("project_id", "user_id", "name", "color", "cover_id").
 		Returning("*").
 		Exec(ctx)
 	if err != nil {
@@ -94,7 +94,7 @@ func (s BoardsStore) Update(ctx context.Context, board *Board) error {
 		return err
 	}
 
-	if noRowsAffected(result) {
+	if NoRowsAffected(result) {
 		return ErrNotFound
 	}
 
@@ -111,7 +111,7 @@ func (s BoardsStore) Delete(ctx context.Context, id string) error {
 		return err
 	}
 
-	if noRowsAffected(result) {
+	if NoRowsAffected(result) {
 		return ErrNotFound
 	}
 
@@ -128,7 +128,7 @@ func (s BoardsStore) UpdateColumns(ctx context.Context, item *Board, columns ...
 		return err
 	}
 
-	if noRowsAffected(result) {
+	if NoRowsAffected(result) {
 		return ErrNotFound
 	}
 	return nil

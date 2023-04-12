@@ -17,6 +17,7 @@ type appConfig struct {
 	GithubClientSecret string `env:"GITHUB_CLIENT_SECRET"`
 
 	SessionsSecretKey string `env:"SESSIONS_SECRET_KEY,notEmpty"`
+	SessionsStorePath string `env:"SESSIONS_STORE_PATH"`
 }
 
 var Projects = struct {

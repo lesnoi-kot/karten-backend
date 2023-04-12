@@ -54,7 +54,7 @@ func (s TaskListsStore) Update(ctx context.Context, item *TaskList) error {
 		return err
 	}
 
-	if noRowsAffected(result) {
+	if NoRowsAffected(result) {
 		return ErrNotFound
 	}
 
@@ -71,7 +71,7 @@ func (s TaskListsStore) Delete(ctx context.Context, id string) error {
 		return err
 	}
 
-	if noRowsAffected(result) {
+	if NoRowsAffected(result) {
 		return ErrNotFound
 	}
 

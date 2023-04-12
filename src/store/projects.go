@@ -12,13 +12,13 @@ type ProjectsStore struct {
 	db bun.IDB
 }
 
-func (s ProjectsStore) Get(ctx context.Context, id string) (*Project, error) {
+func (s ProjectsStore) Get(ctx context.Context, projectID string) (*Project, error) {
 	project := new(Project)
 
 	err := s.db.
 		NewSelect().
 		Model(project).
-		Where("project.id = ?", id).
+		Where("project.id = ?", projectID).
 		Relation("Boards").
 		Relation("Boards.Cover").
 		Relation("Avatar").
@@ -35,11 +35,12 @@ func (s ProjectsStore) Get(ctx context.Context, id string) (*Project, error) {
 	return project, nil
 }
 
-func (s ProjectsStore) GetAll(ctx context.Context) ([]*Project, error) {
+func (s ProjectsStore) GetAll(ctx context.Context, userID UserID) ([]*Project, error) {
 	var projects []*Project
 
 	err := s.db.NewSelect().
 		Model(&projects).
+		Where("user_id = ?", userID).
 		Relation("Boards").
 		Relation("Boards.Cover").
 		Relation("Avatar").
@@ -76,39 +77,42 @@ func (s ProjectsStore) Update(ctx context.Context, project *Project) error {
 		return err
 	}
 
-	if noRowsAffected(result) {
+	if NoRowsAffected(result) {
 		return ErrNotFound
 	}
 
 	return nil
 }
 
-func (s ProjectsStore) Delete(ctx context.Context, id string) error {
+func (s ProjectsStore) Delete(ctx context.Context, projectID string) error {
 	result, err := s.db.NewDelete().
 		Model((*Project)(nil)).
-		Where("id = ?", id).
+		Where("id = ?", projectID).
 		Exec(ctx)
 	if err != nil {
 		return err
 	}
 
-	if noRowsAffected(result) {
+	if NoRowsAffected(result) {
 		return ErrNotFound
 	}
 
 	return nil
 }
 
-func (s ProjectsStore) Clear(ctx context.Context, id string) error {
+func (s ProjectsStore) Clear(ctx context.Context, projectID string) error {
 	_, err := s.db.NewDelete().
 		Model((*Board)(nil)).
-		Where("project_id = ?", id).
+		Where("project_id = ?", projectID).
 		Exec(ctx)
 
 	return err
 }
 
-func (s ProjectsStore) DeleteAll(ctx context.Context) error {
-	_, err := s.db.NewTruncateTable().Model((*Project)(nil)).Exec(ctx)
+func (s ProjectsStore) DeleteAll(ctx context.Context, userID UserID) error {
+	_, err := s.db.NewDelete().
+		Model((*Project)(nil)).
+		Where("user_id = ?", userID).
+		Exec(ctx)
 	return err
 }

@@ -25,10 +25,16 @@ type TaskDTO struct {
 }
 
 func (api *APIService) getTask(c echo.Context) error {
+	userID, _ := getUserID(c)
 	id := c.Param("id")
+
 	task, err := api.store.Tasks.Get(context.Background(), id)
 	if err != nil {
 		return err
+	}
+
+	if task.UserID != userID {
+		return echo.ErrForbidden
 	}
 
 	return c.JSON(http.StatusOK, OK(task))
@@ -53,8 +59,10 @@ func (api *APIService) addTask(c echo.Context) error {
 		return err
 	}
 
+	userID, _ := getUserID(c)
 	task := &store.Task{
 		TaskListID: taskListID,
+		UserID:     userID,
 		Name:       body.Name,
 		Text:       body.Text,
 		Position:   body.Position,
@@ -71,7 +79,7 @@ func (api *APIService) addTask(c echo.Context) error {
 func (api *APIService) editTask(c echo.Context) error {
 	var body struct {
 		TaskListID *string    `json:"task_list_id"`
-		Name       *string    `json:"name" validate:"min=1,max=32"`
+		Name       *string    `json:"name" validate:"omitempty,min=1,max=32"`
 		Text       *string    `json:"text"`
 		Position   *int64     `json:"position"`
 		DueDate    *time.Time `json:"due_date"`
@@ -84,14 +92,22 @@ func (api *APIService) editTask(c echo.Context) error {
 	if body.Name != nil {
 		*body.Name = strings.TrimSpace(*body.Name)
 	}
+	if body.Text != nil {
+		*body.Text = strings.TrimSpace(*body.Text)
+	}
 	if err := c.Validate(&body); err != nil {
 		return err
 	}
 
+	userID, _ := getUserID(c)
 	id := c.Param("id")
 	task, err := api.store.Tasks.Get(context.Background(), id)
 	if err != nil {
 		return err
+	}
+
+	if task.UserID != userID {
+		return echo.ErrForbidden
 	}
 
 	if body.Name != nil {
@@ -118,9 +134,19 @@ func (api *APIService) editTask(c echo.Context) error {
 }
 
 func (api *APIService) deleteTask(c echo.Context) error {
-	id := c.Param("id")
+	taskID := c.Param("id")
 
-	if err := api.store.Tasks.Delete(context.Background(), id); err != nil {
+	task, err := api.store.Tasks.Get(context.Background(), taskID)
+	if err != nil {
+		return err
+	}
+
+	userID, _ := getUserID(c)
+	if task.UserID != userID {
+		return echo.ErrForbidden
+	}
+
+	if err := api.store.Tasks.Delete(context.Background(), taskID); err != nil {
 		return err
 	}
 

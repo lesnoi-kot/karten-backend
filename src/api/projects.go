@@ -21,7 +21,9 @@ type ProjectDTO struct {
 }
 
 func (api *APIService) getProjects(c echo.Context) error {
-	projects, err := api.store.Projects.GetAll(context.Background())
+	userID, _ := getUserID(c)
+
+	projects, err := api.store.Projects.GetAll(context.Background(), userID)
 	if err != nil {
 		return err
 	}
@@ -31,10 +33,15 @@ func (api *APIService) getProjects(c echo.Context) error {
 
 func (api *APIService) getProject(c echo.Context) error {
 	id := c.Param("id")
+	userID, _ := getUserID(c)
 
 	project, err := api.store.Projects.Get(context.Background(), id)
 	if err != nil {
 		return err
+	}
+
+	if project.UserID != userID {
+		return echo.ErrForbidden
 	}
 
 	return c.JSON(http.StatusOK, OK(projectToDTO(project)))
@@ -54,7 +61,8 @@ func (api *APIService) addProject(c echo.Context) error {
 		return err
 	}
 
-	project := &store.Project{Name: body.Name}
+	userID, _ := getUserID(c)
+	project := &store.Project{UserID: userID, Name: body.Name}
 
 	if avatarFileHeader, err := c.FormFile("avatar"); err == nil {
 		avatarData, err := avatarFileHeader.Open()
@@ -124,9 +132,19 @@ func (api *APIService) addProject(c echo.Context) error {
 }
 
 func (api *APIService) deleteProject(c echo.Context) error {
-	id := c.Param("id")
+	projectID := c.Param("id")
+	userID, _ := getUserID(c)
 
-	if err := api.store.Projects.Delete(context.Background(), id); err != nil {
+	project, err := api.store.Projects.Get(context.Background(), projectID)
+	if err != nil {
+		return err
+	}
+
+	if project.UserID != userID {
+		return echo.ErrForbidden
+	}
+
+	if err := api.store.Projects.Delete(context.Background(), projectID); err != nil {
 		return err
 	}
 
@@ -134,7 +152,9 @@ func (api *APIService) deleteProject(c echo.Context) error {
 }
 
 func (api *APIService) deleteProjects(c echo.Context) error {
-	if err := api.store.Projects.DeleteAll(context.Background()); err != nil {
+	userID, _ := getUserID(c)
+
+	if err := api.store.Projects.DeleteAll(context.Background(), userID); err != nil {
 		return err
 	}
 
@@ -163,10 +183,15 @@ func (api *APIService) editProject(c echo.Context) error {
 		return err
 	}
 
-	id := c.Param("id")
-	project, err := api.store.Projects.Get(context.Background(), id)
+	projectID := c.Param("id")
+	userID, _ := getUserID(c)
+	project, err := api.store.Projects.Get(context.Background(), projectID)
 	if err != nil {
 		return err
+	}
+
+	if project.UserID != userID {
+		return echo.ErrForbidden
 	}
 
 	project.Name = body.Name

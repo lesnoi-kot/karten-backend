@@ -8,6 +8,8 @@ import (
 	"github.com/uptrace/bun"
 )
 
+const GuestUserID = 1
+
 type UsersStore struct {
 	db bun.IDB
 }
@@ -74,7 +76,7 @@ func (s UsersStore) Update(ctx context.Context, item *User) error {
 		return err
 	}
 
-	if noRowsAffected(result) {
+	if NoRowsAffected(result) {
 		return ErrNotFound
 	}
 
@@ -90,7 +92,7 @@ func (s UsersStore) Delete(ctx context.Context, id string) error {
 		return err
 	}
 
-	if noRowsAffected(result) {
+	if NoRowsAffected(result) {
 		return ErrNotFound
 	}
 

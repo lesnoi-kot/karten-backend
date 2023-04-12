@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -68,7 +69,42 @@ func parseError(next echo.HandlerFunc) echo.HandlerFunc {
 
 func emulateDelay(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		time.Sleep(1 * time.Second)
+		time.Sleep(200 * time.Millisecond)
 		return next(c)
+	}
+}
+
+func (service *APIService) makeRequireAuthMiddleware() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			userID, err := getUserID(c)
+			if err != nil {
+				return echo.ErrUnauthorized
+			}
+			c.Set("userID", userID)
+			return next(c)
+		}
+	}
+}
+
+func (service *APIService) makeInjectUserMiddleware() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			userID, err := getUserID(c)
+			if err != nil {
+				return echo.ErrUnauthorized
+			}
+
+			user, err := service.store.Users.Get(context.Background(), userID)
+
+			if errors.Is(err, store.ErrNotFound) {
+				return echo.ErrUnauthorized
+			} else if err != nil {
+				return err
+			}
+
+			c.Set("user", user)
+			return next(c)
+		}
 	}
 }

@@ -54,7 +54,7 @@ func (s CommentsStore) Update(ctx context.Context, item *Comment) error {
 		return err
 	}
 
-	if noRowsAffected(result) {
+	if NoRowsAffected(result) {
 		return ErrNotFound
 	}
 
@@ -70,7 +70,7 @@ func (s CommentsStore) Delete(ctx context.Context, id string) error {
 		return err
 	}
 
-	if noRowsAffected(result) {
+	if NoRowsAffected(result) {
 		return ErrNotFound
 	}
 

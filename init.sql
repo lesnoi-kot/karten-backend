@@ -11,6 +11,17 @@ CREATE TABLE files (
   size                 int NOT NULL
 );
 
+CREATE TABLE users (
+  id              int PRIMARY KEY GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+  social_id       varchar(255) UNIQUE NOT NULL CHECK (length("social_id") > 0),
+  avatar_id       uuid REFERENCES files ON DELETE SET NULL,
+  name            varchar(64) NOT NULL CHECK (length("name") > 0),
+  login           varchar(64),
+  email           varchar(64),
+  url             varchar(255),
+  date_created    timestamp DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE image_thumbnails (
   id          uuid PRIMARY KEY REFERENCES files ON DELETE CASCADE,
   image_id    uuid             REFERENCES files ON DELETE CASCADE
@@ -22,6 +33,7 @@ CREATE TABLE default_cover_images (
 
 CREATE TABLE projects (
   id           uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id      int NOT NULL REFERENCES users ON DELETE CASCADE,
   short_id     varchar(12) GENERATED ALWAYS AS (substring(id::text, 25)) STORED,
   name         varchar(32) NOT NULL CHECK (length("name") > 0),
   avatar_id    uuid REFERENCES files ON DELETE SET NULL
@@ -31,18 +43,20 @@ CREATE TABLE boards (
   id                  uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   short_id            varchar(12) GENERATED ALWAYS AS (substring(id::text, 25)) STORED,
   project_id          uuid REFERENCES projects ON DELETE CASCADE,
+  user_id             int NOT NULL REFERENCES users ON DELETE CASCADE,
+  cover_id            uuid REFERENCES files ON DELETE SET NULL,
   name                varchar(32) NOT NULL CHECK (length("name") > 0),
   archived            boolean DEFAULT false NOT NULL,
   favorite            boolean DEFAULT false NOT NULL,
   date_created        timestamp DEFAULT CURRENT_TIMESTAMP,
   date_last_viewed    timestamp DEFAULT CURRENT_TIMESTAMP,
-  color               integer DEFAULT 0 NOT NULL,
-  cover_id            uuid REFERENCES files ON DELETE SET NULL
+  color               integer DEFAULT 0 NOT NULL
 );
 
 CREATE TABLE task_lists (
   id              uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   board_id        uuid REFERENCES boards ON DELETE CASCADE,
+  user_id         int NOT NULL REFERENCES users ON DELETE CASCADE,
   name            varchar(32) NOT NULL CHECK (length("name") > 0),
   position        bigint NOT NULL,
   archived        boolean DEFAULT false NOT NULL,
@@ -54,6 +68,7 @@ CREATE TABLE tasks (
   id              uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   short_id        varchar(12) GENERATED ALWAYS AS (substring(id::text, 25)) STORED,
   task_list_id    uuid REFERENCES task_lists ON DELETE CASCADE,
+  user_id         int NOT NULL REFERENCES users ON DELETE CASCADE,
   name            text NOT NULL CHECK (length("name") > 0),
   text            text DEFAULT '' NOT NULL,
   position        bigint NOT NULL,
@@ -65,8 +80,8 @@ CREATE TABLE tasks (
 CREATE TABLE comments (
   id              uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   task_id         uuid REFERENCES tasks ON DELETE CASCADE,
+  user_id         int REFERENCES users ON DELETE SET NULL,
   text            text NOT NULL CHECK (length("text") > 0),
-  author          varchar(32) DEFAULT 'User',
   date_created    timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 

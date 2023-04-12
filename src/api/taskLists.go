@@ -24,18 +24,23 @@ type TaskListDTO struct {
 
 func (api *APIService) getTaskList(c echo.Context) error {
 	id := c.Param("id")
+	userID, _ := getUserID(c)
+	taskList := new(store.TaskList)
 
-	taskList, err := api.store.TaskLists.Get(context.Background(), id)
+	_, err := api.store.ORM.NewSelect().
+		Model(taskList).
+		Where("id = ?", id).
+		Where("user_id = ?", userID).
+		Relation("Tasks").
+		Exec(context.Background())
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, OK(taskList))
+	return c.JSON(http.StatusOK, OK(taskListToDTO(taskList)))
 }
 
 func (api *APIService) addTaskList(c echo.Context) error {
-	boardID := c.Param("id")
-
 	var body struct {
 		Name     string `json:"name" validate:"required,min=1,max=32"`
 		Color    int    `json:"color"`
@@ -51,8 +56,11 @@ func (api *APIService) addTaskList(c echo.Context) error {
 		return err
 	}
 
+	boardID := c.Param("id")
+	userID, _ := getUserID(c)
 	taskList := &store.TaskList{
 		BoardID:  boardID,
+		UserID:   userID,
 		Name:     body.Name,
 		Color:    body.Color,
 		Position: body.Position,
@@ -85,9 +93,14 @@ func (api *APIService) editTaskList(c echo.Context) error {
 	}
 
 	id := c.Param("id")
+	userID, _ := getUserID(c)
 	taskList, err := api.store.TaskLists.Get(context.Background(), id)
 	if err != nil {
 		return err
+	}
+
+	if taskList.UserID != userID {
+		return echo.ErrForbidden
 	}
 
 	if body.Name != nil {
@@ -111,9 +124,15 @@ func (api *APIService) editTaskList(c echo.Context) error {
 }
 
 func (api *APIService) deleteTaskList(c echo.Context) error {
-	id := c.Param("id")
+	taskListID := c.Param("id")
+	userID, _ := getUserID(c)
 
-	if err := api.store.TaskLists.Delete(context.Background(), id); err != nil {
+	_, err := api.store.ORM.NewDelete().
+		Model((*store.TaskList)(nil)).
+		Where("id = ?", taskListID).
+		Where("user_id = ?", userID).
+		Exec(context.Background())
+	if err != nil {
 		return err
 	}
 
