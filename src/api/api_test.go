@@ -43,7 +43,6 @@ func (suite *baseAPITestSuite) init() {
 
 	suite.store = &store.Store{
 		Entities: store.Entities{
-			Projects:  suite.projectsMock,
 			Boards:    suite.boardsMock,
 			TaskLists: suite.taskListsMock,
 			Tasks:     suite.tasksMock,

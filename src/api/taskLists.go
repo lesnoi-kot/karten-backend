@@ -24,7 +24,7 @@ type TaskListDTO struct {
 
 func (api *APIService) getTaskList(c echo.Context) error {
 	taskListID := c.Param("id")
-	userService := api.getUserService(c)
+	userService := api.mustGetUserService(c)
 
 	taskList, err := userService.GetTaskList(&userservice.GetTaskListOptions{
 		TaskListID:   taskListID,
@@ -53,7 +53,7 @@ func (api *APIService) addTaskList(c echo.Context) error {
 	}
 
 	boardID := c.Param("id")
-	userService := api.getUserService(c)
+	userService := api.mustGetUserService(c)
 	taskList, err := userService.AddTaskList(&userservice.AddTaskListOptions{
 		BoardID:  boardID,
 		Name:     body.Name,
@@ -86,7 +86,7 @@ func (api *APIService) editTaskList(c echo.Context) error {
 	}
 
 	taskListID := c.Param("id")
-	userService := api.getUserService(c)
+	userService := api.mustGetUserService(c)
 
 	err := userService.EditTaskList(&userservice.EditTaskListOptions{
 		TaskListID: taskListID,
@@ -109,7 +109,7 @@ func (api *APIService) editTaskList(c echo.Context) error {
 
 func (api *APIService) deleteTaskList(c echo.Context) error {
 	taskListID := c.Param("id")
-	userService := api.getUserService(c)
+	userService := api.mustGetUserService(c)
 
 	err := userService.DeleteTaskList(&userservice.DeleteTaskListOptions{
 		TaskListID: taskListID,

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/lesnoi-kot/karten-backend/src/store"
+	"github.com/uptrace/bun"
 )
 
 var ErrPermissionDenied error = errors.New("Permission denied")
@@ -15,6 +16,11 @@ type UserService struct {
 	Context context.Context
 	UserID  store.UserID
 	Store   *store.Store
+}
+
+type GetUserOptions struct {
+	FullInfo      bool
+	IncludeAvatar bool
 }
 
 type GetProjectOptions struct {
@@ -88,8 +94,72 @@ type DeleteTaskListOptions struct {
 	TaskListID store.EntityID
 }
 
+type GetTaskOptions struct {
+	TaskID          store.EntityID
+	IncludeComments bool
+}
+
+type AddTaskOptions struct {
+	TaskListID store.EntityID
+	Name       string
+	Text       string
+	Position   int64
+	DueDate    *time.Time
+}
+
+type EditTaskOptions struct {
+	TaskID     store.EntityID
+	TaskListID *store.EntityID
+	Name       *string
+	Text       *string
+	Position   *int64
+	DueDate    *time.Time
+}
+
+type DeleteTaskOptions struct {
+	TaskID store.EntityID
+}
+
 func (user *UserService) SetContext(ctx context.Context) {
 	user.Context = ctx
+}
+
+func (user *UserService) IsValidUser() (bool, error) {
+	ok, err := user.Store.ORM.NewSelect().
+		Model((*store.User)(nil)).
+		Where("id = ?", user.UserID).
+		Exists(user.Context)
+	if err != nil {
+		return false, err
+	}
+
+	return ok, nil
+}
+
+func (userService *UserService) GetUser(args *GetUserOptions) (*store.User, error) {
+	user := new(store.User)
+	q := userService.Store.ORM.NewSelect().
+		Model(user).
+		Column("id", "name", "date_created").
+		Where("? = ?", bun.Ident("user.id"), userService.UserID)
+
+	if args.FullInfo {
+		q = q.Column("social_id", "login", "email", "url")
+	}
+	if args.IncludeAvatar {
+		q = q.Relation("Avatar")
+	}
+
+	err := q.Scan(userService.Context)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, store.ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (user UserService) GetProjects() ([]*store.Project, error) {
@@ -447,6 +517,99 @@ func (user UserService) DeleteTaskList(args *DeleteTaskListOptions) error {
 	deleteResult, err := user.Store.ORM.NewDelete().
 		Model((*store.TaskList)(nil)).
 		Where("id = ?", args.TaskListID).
+		Where("user_id = ?", user.UserID).
+		Exec(user.Context)
+
+	if store.NoRowsAffected(deleteResult) {
+		return store.ErrNotFound
+	}
+
+	return err
+}
+
+func (user UserService) GetTask(args *GetTaskOptions) (*store.Task, error) {
+	task := new(store.Task)
+
+	q := user.Store.ORM.
+		NewSelect().
+		Model(task).
+		Where("id = ?", args.TaskID).
+		Where("user_id = ?", user.UserID)
+
+	if args.IncludeComments {
+		q = q.Relation("Comments")
+	}
+
+	err := q.Scan(user.Context)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, store.ErrNotFound
+		}
+
+		return nil, err
+	}
+
+	return task, nil
+}
+
+func (user UserService) AddTask(args *AddTaskOptions) (*store.Task, error) {
+	task := &store.Task{
+		UserID:     user.UserID,
+		TaskListID: args.TaskListID,
+		Name:       args.Name,
+		Text:       args.Text,
+		Position:   args.Position,
+		DueDate:    args.DueDate,
+	}
+
+	_, err := user.Store.ORM.NewInsert().
+		Model(task).
+		Column("task_list_id", "user_id", "name", "text", "position", "due_date").
+		Returning("*").
+		Exec(user.Context)
+	if err != nil {
+		return nil, err
+	}
+
+	return task, nil
+}
+
+func (user UserService) EditTask(args *EditTaskOptions) error {
+	q := user.Store.ORM.NewUpdate().
+		Model((*store.Task)(nil)).
+		Where("id = ?", args.TaskID).
+		Where("user_id = ?", user.UserID)
+
+	if args.TaskListID != nil {
+		q = q.Set("task_list_id = ?", *args.TaskListID)
+	}
+	if args.Name != nil && *args.Name != "" {
+		q = q.Set("name = ?", *args.Name)
+	}
+	if args.Text != nil {
+		q = q.Set("text = ?", *args.Text)
+	}
+	if args.Position != nil {
+		q = q.Set("position = ?", *args.Position)
+	}
+	if args.DueDate != nil {
+		q = q.Set("due_date = ?", *args.DueDate)
+	}
+
+	updateResult, err := q.Exec(user.Context)
+	if err != nil {
+		return err
+	} else if store.NoRowsAffected(updateResult) {
+		return store.ErrNotFound
+	}
+
+	return nil
+}
+
+func (user UserService) DeleteTask(args *DeleteTaskOptions) error {
+	deleteResult, err := user.Store.ORM.NewDelete().
+		Model((*store.Task)(nil)).
+		Where("id = ?", args.TaskID).
 		Where("user_id = ?", user.UserID).
 		Exec(user.Context)
 

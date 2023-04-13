@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -10,6 +9,7 @@ import (
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/lesnoi-kot/karten-backend/src/store"
+	"github.com/lesnoi-kot/karten-backend/src/userservice"
 )
 
 var requireId echo.MiddlewareFunc = requireParam("id")
@@ -90,16 +90,20 @@ func (service *APIService) makeRequireAuthMiddleware() echo.MiddlewareFunc {
 func (service *APIService) makeInjectUserMiddleware() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			userID, err := getUserID(c)
+			userService, err := service.getUserService(c)
 			if err != nil {
 				return echo.ErrUnauthorized
 			}
 
-			user, err := service.store.Users.Get(context.Background(), userID)
+			user, err := userService.GetUser(&userservice.GetUserOptions{
+				FullInfo:      true,
+				IncludeAvatar: true,
+			})
 
 			if errors.Is(err, store.ErrNotFound) {
 				return echo.ErrUnauthorized
-			} else if err != nil {
+			}
+			if err != nil {
 				return err
 			}
 

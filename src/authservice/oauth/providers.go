@@ -3,11 +3,13 @@ package oauth
 import "net/http"
 
 type UserInfo struct {
-	ID    string
-	Name  string
-	Login string
-	Email string
-	URL   string
+	AuthProvider string
+	ID           string
+	Name         string
+	Login        string
+	Email        string
+	URL          string
+	AvatarURL    string
 }
 
 type OAuthProvider interface {

@@ -87,10 +87,11 @@ func (p GitHubProvider) GetUser(c *http.Client, accessToken string) (*UserInfo, 
 	}
 
 	return &UserInfo{
-		ID:    fmt.Sprint(user.ID),
-		Name:  user.Name,
-		Login: user.Login,
-		Email: user.Email,
-		URL:   user.URL,
+		ID:        fmt.Sprint(user.ID),
+		Name:      user.Name,
+		Login:     user.Login,
+		Email:     user.Email,
+		URL:       user.URL,
+		AvatarURL: user.AvatarURL,
 	}, nil
 }

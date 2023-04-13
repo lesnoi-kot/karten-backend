@@ -82,7 +82,6 @@ func (s *commentsSuite) TestEditComment() {
 				ID:          "777",
 				Text:        "Test",
 				TaskID:      "111",
-				Author:      "Admin",
 				DateCreated: testDate,
 			},
 			nil,

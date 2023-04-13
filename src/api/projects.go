@@ -19,7 +19,7 @@ type ProjectDTO struct {
 }
 
 func (api *APIService) getProjects(c echo.Context) error {
-	userService := api.getUserService(c)
+	userService := api.mustGetUserService(c)
 	projects, err := userService.GetProjects()
 	if err != nil {
 		return err
@@ -30,7 +30,7 @@ func (api *APIService) getProjects(c echo.Context) error {
 
 func (api *APIService) getProject(c echo.Context) error {
 	projectID := c.Param("id")
-	userService := api.getUserService(c)
+	userService := api.mustGetUserService(c)
 
 	project, err := userService.GetProject(&userservice.GetProjectOptions{
 		ProjectID: projectID,
@@ -56,7 +56,7 @@ func (api *APIService) addProject(c echo.Context) error {
 		return err
 	}
 
-	userService := api.getUserService(c)
+	userService := api.mustGetUserService(c)
 	project, err := userService.AddProject(&userservice.AddProjectOptions{
 		Name:     body.Name,
 		AvatarID: body.AvatarID,
@@ -70,7 +70,7 @@ func (api *APIService) addProject(c echo.Context) error {
 
 func (api *APIService) deleteProject(c echo.Context) error {
 	projectID := c.Param("id")
-	userService := api.getUserService(c)
+	userService := api.mustGetUserService(c)
 
 	err := userService.DeleteProject(&userservice.DeleteProjectOptions{
 		ProjectID: projectID,
@@ -83,7 +83,7 @@ func (api *APIService) deleteProject(c echo.Context) error {
 }
 
 func (api *APIService) deleteProjects(c echo.Context) error {
-	if err := api.getUserService(c).DeleteAllProjects(); err != nil {
+	if err := api.mustGetUserService(c).DeleteAllProjects(); err != nil {
 		return err
 	}
 
@@ -92,7 +92,7 @@ func (api *APIService) deleteProjects(c echo.Context) error {
 
 func (api *APIService) clearProject(c echo.Context) error {
 	projectID := c.Param("id")
-	if err := api.getUserService(c).ClearProject(projectID); err != nil {
+	if err := api.mustGetUserService(c).ClearProject(projectID); err != nil {
 		return err
 	}
 
@@ -112,7 +112,7 @@ func (api *APIService) editProject(c echo.Context) error {
 	}
 
 	projectID := c.Param("id")
-	userService := api.getUserService(c)
+	userService := api.mustGetUserService(c)
 
 	err := userService.EditProject(&userservice.EditProjectOptions{
 		ProjectID: projectID,

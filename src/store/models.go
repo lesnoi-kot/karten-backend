@@ -27,6 +27,8 @@ type User struct {
 	Email       string
 	URL         string
 	DateCreated time.Time
+
+	Avatar *ImageFile `bun:"rel:has-one,join:avatar_id=id"`
 }
 
 type File struct {

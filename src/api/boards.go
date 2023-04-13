@@ -28,7 +28,7 @@ type BoardDTO struct {
 func (api *APIService) getBoard(c echo.Context) error {
 	boardID := c.Param("id")
 	mode := c.QueryParam("mode")
-	userService := api.getUserService(c)
+	userService := api.mustGetUserService(c)
 	board, err := userService.GetBoard(&userservice.GetBoardOptions{
 		BoardID:          boardID,
 		IncludeTaskLists: mode != "shallow",
@@ -57,7 +57,7 @@ func (api *APIService) addBoard(c echo.Context) error {
 	}
 
 	projectID := c.Param("id")
-	userService := api.getUserService(c)
+	userService := api.mustGetUserService(c)
 	board, err := userService.AddBoard(&userservice.AddBoardOptions{
 		ProjectID: projectID,
 		Name:      body.Name,
@@ -87,7 +87,7 @@ func (api *APIService) editBoard(c echo.Context) error {
 		return err
 	}
 
-	userService := api.getUserService(c)
+	userService := api.mustGetUserService(c)
 	boardID := c.Param("id")
 	err := userService.EditBoard(&userservice.EditBoardOptions{
 		BoardID:  boardID,
@@ -113,7 +113,7 @@ func (api *APIService) editBoard(c echo.Context) error {
 
 func (api *APIService) deleteBoard(c echo.Context) error {
 	boardID := c.Param("id")
-	userService := api.getUserService(c)
+	userService := api.mustGetUserService(c)
 
 	err := userService.DeleteBoard(&userservice.DeleteBoardOptions{BoardID: boardID})
 	if err != nil {
@@ -125,7 +125,7 @@ func (api *APIService) deleteBoard(c echo.Context) error {
 
 func (api *APIService) setFavoriteBoard(c echo.Context, favorite bool) error {
 	boardID := c.Param("id")
-	userService := api.getUserService(c)
+	userService := api.mustGetUserService(c)
 
 	err := userService.EditBoard(&userservice.EditBoardOptions{
 		BoardID:  boardID,

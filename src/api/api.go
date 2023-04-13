@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/url"
 	"time"
@@ -130,6 +131,7 @@ func NewAPI(cfg APIConfig) *APIService {
 
 func initRoutes(api *APIService) {
 	requireAuth := api.makeRequireAuthMiddleware()
+	injectUser := api.makeInjectUserMiddleware()
 
 	root := api.handler.Group(api.apiPrefix)
 
@@ -142,7 +144,7 @@ func initRoutes(api *APIService) {
 	}
 
 	users := root.Group("/users", requireAuth)
-	users.GET("/self", api.getCurrentUser)
+	users.GET("/self", api.getCurrentUser, injectUser)
 	users.POST("/self/logout", api.logOut)
 
 	projects := root.Group("/projects", requireAuth)
@@ -213,8 +215,24 @@ func (a APIService) Prefix() string {
 	return a.apiPrefix
 }
 
-func (api *APIService) getUserService(c echo.Context) *userservice.UserService {
-	userID, _ := getUserID(c)
+func (api *APIService) getUserService(c echo.Context) (*userservice.UserService, error) {
+	userID, err := getUserID(c)
+	if err != nil {
+		return nil, err
+	}
+
+	return &userservice.UserService{
+		Context: context.Background(),
+		UserID:  userID,
+		Store:   api.store,
+	}, nil
+}
+
+func (api *APIService) mustGetUserService(c echo.Context) *userservice.UserService {
+	userID, err := getUserID(c)
+	if err != nil {
+		panic(errors.New("mustGetUserService: unauthorized"))
+	}
 
 	return &userservice.UserService{
 		Context: context.Background(),

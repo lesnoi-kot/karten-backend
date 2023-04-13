@@ -1,13 +1,12 @@
 package api
 
 import (
-	"context"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/lesnoi-kot/karten-backend/src/store"
+	"github.com/lesnoi-kot/karten-backend/src/userservice"
 )
 
 type TaskDTO struct {
@@ -25,31 +24,26 @@ type TaskDTO struct {
 }
 
 func (api *APIService) getTask(c echo.Context) error {
-	userID, _ := getUserID(c)
-	id := c.Param("id")
-
-	task, err := api.store.Tasks.Get(context.Background(), id)
+	taskID := c.Param("id")
+	user := api.mustGetUserService(c)
+	task, err := user.GetTask(&userservice.GetTaskOptions{
+		TaskID:          taskID,
+		IncludeComments: true,
+	})
 	if err != nil {
 		return err
 	}
 
-	if task.UserID != userID {
-		return echo.ErrForbidden
-	}
-
-	return c.JSON(http.StatusOK, OK(task))
+	return c.JSON(http.StatusOK, OK(taskToDTO(task)))
 }
 
 func (api *APIService) addTask(c echo.Context) error {
-	taskListID := c.Param("id")
-
 	var body struct {
 		Name     string     `json:"name" validate:"required,min=1,max=32"`
 		Text     string     `json:"text"`
 		Position int64      `json:"position"`
 		DueDate  *time.Time `json:"due_date"`
 	}
-
 	if err := c.Bind(&body); err != nil {
 		return err
 	}
@@ -59,21 +53,20 @@ func (api *APIService) addTask(c echo.Context) error {
 		return err
 	}
 
-	userID, _ := getUserID(c)
-	task := &store.Task{
+	taskListID := c.Param("id")
+	user := api.mustGetUserService(c)
+	task, err := user.AddTask(&userservice.AddTaskOptions{
 		TaskListID: taskListID,
-		UserID:     userID,
 		Name:       body.Name,
 		Text:       body.Text,
 		Position:   body.Position,
 		DueDate:    body.DueDate,
-	}
-
-	if err := api.store.Tasks.Add(context.Background(), task); err != nil {
+	})
+	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, OK(task))
+	return c.JSON(http.StatusOK, OK(taskToDTO(task)))
 }
 
 func (api *APIService) editTask(c echo.Context) error {
@@ -84,7 +77,6 @@ func (api *APIService) editTask(c echo.Context) error {
 		Position   *int64     `json:"position"`
 		DueDate    *time.Time `json:"due_date"`
 	}
-
 	if err := c.Bind(&body); err != nil {
 		return err
 	}
@@ -99,54 +91,37 @@ func (api *APIService) editTask(c echo.Context) error {
 		return err
 	}
 
-	userID, _ := getUserID(c)
-	id := c.Param("id")
-	task, err := api.store.Tasks.Get(context.Background(), id)
+	taskID := c.Param("id")
+	user := api.mustGetUserService(c)
+	err := user.EditTask(&userservice.EditTaskOptions{
+		TaskID:     taskID,
+		TaskListID: body.TaskListID,
+		Name:       body.Name,
+		Text:       body.Text,
+		Position:   body.Position,
+		DueDate:    body.DueDate,
+	})
 	if err != nil {
 		return err
 	}
 
-	if task.UserID != userID {
-		return echo.ErrForbidden
-	}
-
-	if body.Name != nil {
-		task.Name = *body.Name
-	}
-	if body.Text != nil {
-		task.Text = *body.Text
-	}
-	if body.Position != nil {
-		task.Position = *body.Position
-	}
-	if body.DueDate != nil {
-		task.DueDate = body.DueDate
-	}
-	if body.TaskListID != nil {
-		task.TaskListID = *body.TaskListID
-	}
-
-	if err := api.store.Tasks.Update(context.Background(), task); err != nil {
+	task, err := user.GetTask(&userservice.GetTaskOptions{
+		TaskID:          taskID,
+		IncludeComments: false,
+	})
+	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, OK(task))
+	return c.JSON(http.StatusOK, OK(taskToDTO(task)))
 }
 
 func (api *APIService) deleteTask(c echo.Context) error {
 	taskID := c.Param("id")
+	user := api.mustGetUserService(c)
 
-	task, err := api.store.Tasks.Get(context.Background(), taskID)
+	err := user.DeleteTask(&userservice.DeleteTaskOptions{TaskID: taskID})
 	if err != nil {
-		return err
-	}
-
-	userID, _ := getUserID(c)
-	if task.UserID != userID {
-		return echo.ErrForbidden
-	}
-
-	if err := api.store.Tasks.Delete(context.Background(), taskID); err != nil {
 		return err
 	}
 
