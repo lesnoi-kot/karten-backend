@@ -32,13 +32,6 @@ type Entities struct {
 		Update(ctx context.Context, item *User) error
 		Delete(ctx context.Context, id string) error
 	}
-	Projects interface {
-		Repo[Project]
-
-		GetAll(ctx context.Context, userID UserID) ([]*Project, error)
-		Clear(ctx context.Context, projectID string) error
-		DeleteAll(ctx context.Context, userID UserID) error
-	}
 	Boards interface {
 		Repo[Board]
 
@@ -55,7 +48,9 @@ type Entities struct {
 	}
 	Files interface {
 		Get(ctx context.Context, fileID FileID) (*File, error)
+		GetImage(ctx context.Context, fileID FileID) (*ImageFile, error)
 		Add(ctx context.Context, opts AddFileOptions) (*File, error)
+		AddImage(ctx context.Context, opts AddFileOptions) (*ImageFile, error)
 		AddImageThumbnail(ctx context.Context, opts AddImageThumbnailOptions) (*File, error)
 		GetDefaultCovers(ctx context.Context) ([]ImageFile, error)
 		IsDefaultCover(ctx context.Context, fileID FileID) bool
@@ -107,7 +102,6 @@ func NewStore(cfg StoreConfig) (*Store, error) {
 		fileStorage: cfg.FileStorage,
 		Entities: Entities{
 			Users:     UsersStore{db},
-			Projects:  ProjectsStore{db},
 			Boards:    BoardsStore{db},
 			TaskLists: TaskListsStore{db},
 			Tasks:     TasksStore{db},
@@ -171,7 +165,6 @@ func newTxStore(tx bun.Tx, fileStorage filestorage.FileStorage) *TxStore {
 		tx: tx,
 		Entities: Entities{
 			Users:     UsersStore{tx},
-			Projects:  ProjectsStore{tx},
 			Boards:    BoardsStore{tx},
 			TaskLists: TaskListsStore{tx},
 			Tasks:     TasksStore{tx},

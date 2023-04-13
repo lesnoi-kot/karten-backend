@@ -42,7 +42,8 @@ func ParseImage(data io.Reader) (*ImageInfo, error) {
 	return &imageInfo, nil
 }
 
-func MakeProjectAvatarThumbnail(data io.Reader) (io.Reader, error) {
+// Makes png thumbnail of the input image.
+func MakeThumbnail(data io.Reader) (io.Reader, error) {
 	img, _, err := image.Decode(data)
 	if err != nil {
 		return nil, err

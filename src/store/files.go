@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"io"
 	"path"
 	"strings"
@@ -116,10 +117,35 @@ func (s FilesInfoStore) Get(ctx context.Context, fileID FileID) (*File, error) {
 	return file, err
 }
 
-func (file *File) IsImage() bool {
-	if file == nil {
-		return false
+func (s FilesInfoStore) GetImage(ctx context.Context, fileID FileID) (*ImageFile, error) {
+	img := new(ImageFile)
+	err := s.db.NewSelect().
+		Model(img).
+		Relation("Thumbnails").
+		Where("id = ?", fileID).
+		Scan(ctx)
+
+	if !img.IsImage() {
+		return nil, ErrNotFound
 	}
 
-	return strings.HasPrefix(file.MimeType, "image/")
+	return img, err
+}
+
+func (s FilesInfoStore) AddImage(ctx context.Context, opts AddFileOptions) (*ImageFile, error) {
+	if !strings.HasPrefix(opts.MIMEType, "image/") {
+		return nil, errors.New("Input file is not an image")
+	}
+
+	file, err := s.Add(ctx, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	image := &ImageFile{
+		File:       *file,
+		Thumbnails: make([]*File, 0),
+	}
+
+	return image, err
 }

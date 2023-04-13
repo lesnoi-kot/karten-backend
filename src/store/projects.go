@@ -83,36 +83,3 @@ func (s ProjectsStore) Update(ctx context.Context, project *Project) error {
 
 	return nil
 }
-
-func (s ProjectsStore) Delete(ctx context.Context, projectID string) error {
-	result, err := s.db.NewDelete().
-		Model((*Project)(nil)).
-		Where("id = ?", projectID).
-		Exec(ctx)
-	if err != nil {
-		return err
-	}
-
-	if NoRowsAffected(result) {
-		return ErrNotFound
-	}
-
-	return nil
-}
-
-func (s ProjectsStore) Clear(ctx context.Context, projectID string) error {
-	_, err := s.db.NewDelete().
-		Model((*Board)(nil)).
-		Where("project_id = ?", projectID).
-		Exec(ctx)
-
-	return err
-}
-
-func (s ProjectsStore) DeleteAll(ctx context.Context, userID UserID) error {
-	_, err := s.db.NewDelete().
-		Model((*Project)(nil)).
-		Where("user_id = ?", userID).
-		Exec(ctx)
-	return err
-}

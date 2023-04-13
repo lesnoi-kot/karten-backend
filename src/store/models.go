@@ -1,6 +1,7 @@
 package store
 
 import (
+	"strings"
 	"time"
 
 	"github.com/lesnoi-kot/karten-backend/src/filestorage"
@@ -38,6 +39,14 @@ type File struct {
 	Size            int                `json:"size"`
 }
 
+func (file *File) IsImage() bool {
+	if file == nil {
+		return false
+	}
+
+	return strings.HasPrefix(file.MimeType, "image/")
+}
+
 type ImageThumbnailAssoc struct {
 	bun.BaseModel `bun:"table:image_thumbnails"`
 
@@ -53,7 +62,7 @@ type ImageFile struct {
 	bun.BaseModel `bun:"table:files"`
 	File
 
-	Thumbnails []File `bun:"m2m:image_thumbnails,join:Original=Thumbnail" json:"thumbnails,omitempty"`
+	Thumbnails []*File `bun:"m2m:image_thumbnails,join:Original=Thumbnail" json:"thumbnails,omitempty"`
 }
 
 type CoverImageToFileAssoc struct {
@@ -101,7 +110,7 @@ type Task struct {
 	ID          EntityID `bun:",pk,autoincrement" json:"id"`
 	UserID      UserID
 	ShortID     string     `json:"short_id"`
-	TaskListID  string     `bun:"task_list_id" json:"task_list_id"`
+	TaskListID  EntityID   `bun:"task_list_id" json:"task_list_id"`
 	Name        string     `json:"name"`
 	Text        string     `json:"text"`
 	Position    int64      `json:"position"`
@@ -115,14 +124,14 @@ type Task struct {
 type TaskList struct {
 	bun.BaseModel `bun:"table:task_lists"`
 
-	ID          EntityID `bun:",pk" json:"id"`
-	UserID      UserID
-	BoardID     string    `bun:"board_id" json:"board_id"`
-	Name        string    `json:"name"`
-	Archived    bool      `json:"archived"`
-	Position    int64     `json:"position"`
-	DateCreated time.Time `json:"date_created"`
-	Color       Color     `json:"color"`
+	ID          EntityID  `bun:",pk" json:"-"`
+	UserID      UserID    `json:"-"`
+	BoardID     EntityID  `bun:"board_id" json:"-"`
+	Name        string    `json:"-"`
+	Archived    bool      `json:"-"`
+	Position    int64     `json:"-"`
+	DateCreated time.Time `json:"-"`
+	Color       Color     `json:"-"`
 
 	Tasks []*Task `bun:"rel:has-many,join:id=task_list_id" json:"tasks,omitempty"`
 }
@@ -132,7 +141,7 @@ type Comment struct {
 
 	ID          EntityID `bun:",pk" json:"id"`
 	UserID      UserID
-	TaskID      string
+	TaskID      EntityID
 	Text        string
 	DateCreated time.Time
 }

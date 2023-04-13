@@ -20,6 +20,11 @@ type FileDTO struct {
 	Size     int    `json:"size"`
 }
 
+type ImageFileDTO struct {
+	FileDTO
+	Thumbnails []*FileDTO `json:"thumbnails"`
+}
+
 func (api *APIService) getCoverImages(c echo.Context) error {
 	files, err := api.store.Files.GetDefaultCovers(context.Background())
 	if err != nil {
@@ -36,6 +41,7 @@ func (api *APIService) getCoverImages(c echo.Context) error {
 }
 
 func (api *APIService) uploadImage(c echo.Context) error {
+	make_thumbnail := c.QueryParam("thumb") != ""
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
 		return err
@@ -59,7 +65,7 @@ func (api *APIService) uploadImage(c echo.Context) error {
 			SetInternal(err)
 	}
 
-	dbFile, err := api.store.Files.Add(context.Background(), store.AddFileOptions{
+	dbFile, err := api.store.Files.AddImage(context.Background(), store.AddFileOptions{
 		Name:     fileHeader.Filename,
 		Data:     bytes.NewReader(data),
 		MIMEType: image.MIMEType,
@@ -69,5 +75,28 @@ func (api *APIService) uploadImage(c echo.Context) error {
 	}
 
 	api.logger.Debugf("Added image %s", dbFile.ID)
-	return c.JSON(http.StatusOK, OK(fileToDTO(dbFile)))
+
+	if make_thumbnail {
+		thumbnail, err := images.MakeThumbnail(bytes.NewReader(data))
+		if err != nil {
+			return err
+		}
+
+		dbThumbnail, err := api.store.Files.AddImageThumbnail(context.Background(), store.AddImageThumbnailOptions{
+			AddFileOptions: store.AddFileOptions{
+				Name:     fileHeader.Filename,
+				Data:     thumbnail,
+				MIMEType: "image/png",
+			},
+			OriginalImageFileID: dbFile.ID,
+		})
+		if err != nil {
+			return err
+		}
+
+		api.logger.Debugf("Added thumbnail %s", dbThumbnail.ID)
+		dbFile.Thumbnails = append(dbFile.Thumbnails, dbThumbnail)
+	}
+
+	return c.JSON(http.StatusOK, OK(imageFileToDTO(dbFile)))
 }

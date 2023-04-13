@@ -18,7 +18,7 @@ func projectToDTO(project *store.Project) *ProjectDTO {
 		dto.AvatarURL = urlprovider.GetFileURL(&project.Avatar.File)
 
 		if len(project.Avatar.Thumbnails) > 0 {
-			dto.AvatarThumbnailURL = urlprovider.GetFileURL(&project.Avatar.Thumbnails[0])
+			dto.AvatarThumbnailURL = urlprovider.GetFileURL(project.Avatar.Thumbnails[0])
 		}
 	}
 
@@ -46,6 +46,21 @@ func fileToDTO(file *store.File) *FileDTO {
 		Name:     file.Name,
 		MimeType: file.MimeType,
 		Size:     file.Size,
+	}
+
+	return dto
+}
+
+func imageFileToDTO(file *store.ImageFile) *ImageFileDTO {
+	dto := &ImageFileDTO{
+		FileDTO: FileDTO{
+			ID:       file.ID,
+			URL:      urlprovider.GetFileURL(&file.File),
+			Name:     file.Name,
+			MimeType: file.MimeType,
+			Size:     file.Size,
+		},
+		Thumbnails: filesToDTO(file.Thumbnails),
 	}
 
 	return dto

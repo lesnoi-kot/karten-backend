@@ -9,10 +9,32 @@ import (
 	"github.com/lesnoi-kot/karten-backend/src/store"
 )
 
+var ErrPermissionDenied error = errors.New("Permission denied")
+
 type UserService struct {
 	Context context.Context
 	UserID  store.UserID
 	Store   *store.Store
+}
+
+type GetProjectOptions struct {
+	ProjectID     store.EntityID
+	IncludeBoards bool
+}
+
+type AddProjectOptions struct {
+	Name     string
+	AvatarID *store.FileID
+}
+
+type EditProjectOptions struct {
+	ProjectID store.EntityID
+	Name      *string
+	AvatarID  *store.FileID
+}
+
+type DeleteProjectOptions struct {
+	ProjectID store.EntityID
 }
 
 type GetBoardOptions struct {
@@ -20,6 +42,13 @@ type GetBoardOptions struct {
 	SkipDateLastViewedUpdate bool
 	IncludeTaskLists         bool
 	IncludeTasks             bool
+}
+
+type AddBoardOptions struct {
+	ProjectID store.EntityID
+	Name      string
+	Color     store.Color
+	CoverID   *store.FileID
 }
 
 type EditBoardOptions struct {
@@ -31,12 +60,176 @@ type EditBoardOptions struct {
 	CoverID  *store.FileID
 }
 
+type GetTaskListOptions struct {
+	TaskListID   store.EntityID
+	IncludeTasks bool
+}
+
+type EditTaskListOptions struct {
+	TaskListID store.EntityID
+	Name       *string
+	Archived   *bool
+	Color      *store.Color
+	Position   *int64
+}
+
 type DeleteBoardOptions struct {
 	BoardID store.EntityID
 }
 
+type AddTaskListOptions struct {
+	BoardID  store.EntityID
+	Name     string
+	Color    store.Color
+	Position int64
+}
+
+type DeleteTaskListOptions struct {
+	TaskListID store.EntityID
+}
+
 func (user *UserService) SetContext(ctx context.Context) {
 	user.Context = ctx
+}
+
+func (user UserService) GetProjects() ([]*store.Project, error) {
+	var projects []*store.Project
+
+	err := user.Store.ORM.NewSelect().
+		Model(&projects).
+		Where("user_id = ?", user.UserID).
+		Relation("Boards").
+		Relation("Boards.Cover").
+		Relation("Avatar").
+		Relation("Avatar.Thumbnails").
+		Scan(user.Context)
+
+	return projects, err
+}
+
+func (user UserService) GetProject(args *GetProjectOptions) (*store.Project, error) {
+	project := new(store.Project)
+	q := user.Store.ORM.NewSelect().
+		Model(project).
+		Where("project.id = ?", args.ProjectID).
+		Where("project.user_id = ?", user.UserID).
+		Relation("Avatar").
+		Relation("Avatar.Thumbnails")
+
+	if args.IncludeBoards {
+		q = q.Relation("Boards").Relation("Boards.Cover")
+	}
+
+	err := q.Scan(user.Context)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, store.ErrNotFound
+	} else if err != nil {
+		return nil, err
+	}
+
+	return project, nil
+}
+
+func (user UserService) AddProject(args *AddProjectOptions) (*store.Project, error) {
+	project := &store.Project{
+		UserID: user.UserID,
+		Name:   args.Name,
+	}
+
+	if args.AvatarID != nil {
+		avatarFile, err := user.Store.Files.GetImage(user.Context, *args.AvatarID)
+		if err != nil {
+			return nil, err
+		}
+
+		project.AvatarID = avatarFile.ID
+		project.Avatar = avatarFile
+	}
+
+	_, err := user.Store.ORM.NewInsert().
+		Model(project).
+		Column("user_id", "name", "avatar_id").
+		Returning("*").
+		Exec(user.Context)
+	if err != nil {
+		return nil, err
+	}
+
+	return project, nil
+}
+
+func (user UserService) EditProject(args *EditProjectOptions) error {
+	if args.AvatarID == nil && args.Name == nil {
+		return nil
+	}
+
+	q := user.Store.ORM.NewUpdate().
+		Model((*store.Project)(nil)).
+		Where("id = ?", args.ProjectID).
+		Where("user_id = ?", user.UserID)
+
+	if args.Name != nil && *args.Name != "" {
+		q = q.Set("name = ?", *args.Name)
+	}
+	if args.AvatarID != nil {
+		q = q.Set("avatar_id = ?", *args.AvatarID)
+	}
+
+	updateResult, err := q.Exec(user.Context)
+	if err != nil {
+		return err
+	} else if store.NoRowsAffected(updateResult) {
+		return store.ErrNotFound
+	}
+
+	return nil
+}
+
+func (user UserService) ClearProject(projectID store.EntityID) error {
+	owns, err := user.OwnsProject(projectID)
+	if err != nil {
+		return err
+	}
+	if !owns {
+		return ErrPermissionDenied
+	}
+
+	_, err = user.Store.ORM.NewDelete().
+		Model((*store.Board)(nil)).
+		Where("project_id = ?", projectID).
+		Exec(user.Context)
+
+	return err
+}
+
+func (user UserService) DeleteProject(args *DeleteProjectOptions) error {
+	result, err := user.Store.ORM.NewDelete().
+		Model((*store.Project)(nil)).
+		Where("id = ?", args.ProjectID).
+		Where("user_id = ?", user.UserID).
+		Exec(user.Context)
+
+	if store.NoRowsAffected(result) {
+		return store.ErrNotFound
+	}
+
+	return err
+}
+
+func (user UserService) DeleteAllProjects() error {
+	_, err := user.Store.ORM.NewDelete().
+		Model((*store.Project)(nil)).
+		Where("user_id = ?", user.UserID).
+		Exec(user.Context)
+	return err
+}
+
+func (user UserService) OwnsProject(projectID store.EntityID) (bool, error) {
+	return user.Store.ORM.NewSelect().
+		Model((*store.Project)(nil)).
+		Where("id = ?", projectID).
+		Where("user_id = ?", user.UserID).
+		Exists(user.Context)
 }
 
 func (user UserService) GetBoard(args *GetBoardOptions) (*store.Board, error) {
@@ -45,6 +238,7 @@ func (user UserService) GetBoard(args *GetBoardOptions) (*store.Board, error) {
 	q := user.Store.ORM.NewSelect().
 		Model(board).
 		WherePK("id", "user_id").
+		Where("archived = ?", false).
 		Relation("Cover")
 
 	if args.IncludeTaskLists {
@@ -87,7 +281,37 @@ func (user UserService) GetBoard(args *GetBoardOptions) (*store.Board, error) {
 	return board, nil
 }
 
-func (user UserService) UpdateBoard(args *EditBoardOptions) error {
+func (user UserService) AddBoard(args *AddBoardOptions) (*store.Board, error) {
+	board := &store.Board{
+		ProjectID: args.ProjectID,
+		UserID:    user.UserID,
+		Name:      args.Name,
+		Color:     args.Color,
+		CoverID:   nil,
+	}
+
+	if args.CoverID != nil {
+		coverFile, _ := user.Store.Files.Get(user.Context, *args.CoverID)
+
+		if coverFile.IsImage() {
+			board.CoverID = args.CoverID
+			board.Cover = coverFile
+		}
+	}
+
+	_, err := user.Store.ORM.NewInsert().
+		Model(board).
+		Column("project_id", "user_id", "name", "color", "cover_id").
+		Returning("*").
+		Exec(user.Context)
+	if err != nil {
+		return nil, err
+	}
+
+	return board, nil
+}
+
+func (user UserService) EditBoard(args *EditBoardOptions) error {
 	q := user.Store.ORM.NewUpdate().
 		Model((*store.Board)(nil)).
 		Where("id = ?", args.BoardID).
@@ -120,11 +344,115 @@ func (user UserService) UpdateBoard(args *EditBoardOptions) error {
 }
 
 func (user UserService) DeleteBoard(args *DeleteBoardOptions) error {
-	_, err := user.Store.ORM.NewDelete().
+	deleteResult, err := user.Store.ORM.NewDelete().
 		Model((*store.Board)(nil)).
 		Where("id = ?", args.BoardID).
 		Where("user_id = ?", user.UserID).
 		Exec(user.Context)
+
+	if store.NoRowsAffected(deleteResult) {
+		return store.ErrNotFound
+	}
+
+	return err
+}
+
+func (user UserService) OwnsBoard(boardID store.EntityID) (bool, error) {
+	return user.Store.ORM.NewSelect().
+		Model((*store.Board)(nil)).
+		Where("id = ?", boardID).
+		Where("user_id = ?", user.UserID).
+		Exists(user.Context)
+}
+
+func (user UserService) GetTaskList(args *GetTaskListOptions) (*store.TaskList, error) {
+	taskList := new(store.TaskList)
+	q := user.Store.ORM.NewSelect().
+		Model(taskList).
+		Where("id = ?", args.TaskListID).
+		Where("user_id = ?", user.UserID).
+		Where("archived = ?", false)
+
+	if args.IncludeTasks {
+		q = q.Relation("Tasks")
+	}
+
+	if err := q.Scan(user.Context); err != nil {
+		return nil, err
+	}
+
+	return taskList, nil
+}
+
+func (user UserService) AddTaskList(args *AddTaskListOptions) (*store.TaskList, error) {
+	owns, err := user.OwnsBoard(args.BoardID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !owns {
+		return nil, ErrPermissionDenied
+	}
+
+	taskList := &store.TaskList{
+		BoardID:  args.BoardID,
+		UserID:   user.UserID,
+		Name:     args.Name,
+		Color:    args.Color,
+		Position: args.Position,
+	}
+
+	_, err = user.Store.ORM.NewInsert().
+		Model(taskList).
+		Column("board_id", "user_id", "name", "color", "position").
+		Returning("*").
+		Exec(user.Context)
+	if err != nil {
+		return nil, err
+	}
+
+	return taskList, nil
+}
+
+func (user UserService) EditTaskList(args *EditTaskListOptions) error {
+	q := user.Store.ORM.NewUpdate().
+		Model((*store.TaskList)(nil)).
+		Where("id = ?", args.TaskListID).
+		Where("user_id = ?", user.UserID)
+
+	if args.Name != nil && *args.Name != "" {
+		q = q.Set("name = ?", *args.Name)
+	}
+	if args.Archived != nil {
+		q = q.Set("archived = ?", *args.Archived)
+	}
+	if args.Color != nil {
+		q = q.Set("color = ?", *args.Color)
+	}
+	if args.Position != nil {
+		q = q.Set("position = ?", *args.Position)
+	}
+
+	updateResult, err := q.Exec(user.Context)
+	if err != nil {
+		return err
+	} else if store.NoRowsAffected(updateResult) {
+		return store.ErrNotFound
+	}
+
+	return nil
+}
+
+func (user UserService) DeleteTaskList(args *DeleteTaskListOptions) error {
+	deleteResult, err := user.Store.ORM.NewDelete().
+		Model((*store.TaskList)(nil)).
+		Where("id = ?", args.TaskListID).
+		Where("user_id = ?", user.UserID).
+		Exec(user.Context)
+
+	if store.NoRowsAffected(deleteResult) {
+		return store.ErrNotFound
+	}
 
 	return err
 }

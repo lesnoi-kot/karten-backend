@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"net/http"
 	"strings"
 	"time"
@@ -28,9 +27,13 @@ type BoardDTO struct {
 
 func (api *APIService) getBoard(c echo.Context) error {
 	boardID := c.Param("id")
+	mode := c.QueryParam("mode")
 	userService := api.getUserService(c)
-
-	board, err := userService.GetBoard(&userservice.GetBoardOptions{BoardID: boardID})
+	board, err := userService.GetBoard(&userservice.GetBoardOptions{
+		BoardID:          boardID,
+		IncludeTaskLists: mode != "shallow",
+		IncludeTasks:     mode != "shallow",
+	})
 	if err != nil {
 		return err
 	}
@@ -44,7 +47,6 @@ func (api *APIService) addBoard(c echo.Context) error {
 		Color   store.Color   `json:"color"`
 		CoverID *store.FileID `json:"cover_id"`
 	}
-
 	if err := c.Bind(&body); err != nil {
 		return err
 	}
@@ -55,25 +57,14 @@ func (api *APIService) addBoard(c echo.Context) error {
 	}
 
 	projectID := c.Param("id")
-	userID, _ := getUserID(c)
-	board := &store.Board{
+	userService := api.getUserService(c)
+	board, err := userService.AddBoard(&userservice.AddBoardOptions{
 		ProjectID: projectID,
-		UserID:    userID,
 		Name:      body.Name,
 		Color:     body.Color,
-		CoverID:   nil,
-	}
-
-	if body.CoverID != nil {
-		cover, _ := api.store.Files.Get(context.Background(), *body.CoverID)
-
-		if cover.IsImage() {
-			board.CoverID = body.CoverID
-			board.Cover = cover
-		}
-	}
-
-	if err := api.store.Boards.Add(context.Background(), board); err != nil {
+		CoverID:   body.CoverID,
+	})
+	if err != nil {
 		return err
 	}
 
@@ -87,7 +78,6 @@ func (api *APIService) editBoard(c echo.Context) error {
 		Color    *store.Color  `json:"color"`
 		CoverID  *store.FileID `json:"cover_id"`
 	}
-
 	if err := c.Bind(&body); err != nil {
 		return err
 	}
@@ -99,20 +89,20 @@ func (api *APIService) editBoard(c echo.Context) error {
 
 	userService := api.getUserService(c)
 	boardID := c.Param("id")
-	board, err := userService.GetBoard(&userservice.GetBoardOptions{
-		BoardID:                  boardID,
-		SkipDateLastViewedUpdate: true,
+	err := userService.EditBoard(&userservice.EditBoardOptions{
+		BoardID:  boardID,
+		Name:     body.Name,
+		Archived: body.Archived,
+		Color:    body.Color,
+		CoverID:  body.CoverID,
 	})
 	if err != nil {
 		return err
 	}
 
-	err = userService.UpdateBoard(&userservice.EditBoardOptions{
-		BoardID:  board.ID,
-		Name:     body.Name,
-		Archived: body.Archived,
-		Color:    body.Color,
-		CoverID:  body.CoverID,
+	board, err := userService.GetBoard(&userservice.GetBoardOptions{
+		BoardID:                  boardID,
+		SkipDateLastViewedUpdate: true,
 	})
 	if err != nil {
 		return err
@@ -137,7 +127,7 @@ func (api *APIService) setFavoriteBoard(c echo.Context, favorite bool) error {
 	boardID := c.Param("id")
 	userService := api.getUserService(c)
 
-	err := userService.UpdateBoard(&userservice.EditBoardOptions{
+	err := userService.EditBoard(&userservice.EditBoardOptions{
 		BoardID:  boardID,
 		Favorite: &favorite,
 	})

@@ -1,14 +1,12 @@
 package api
 
 import (
-	"context"
-	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/labstack/echo/v4"
-	"github.com/lesnoi-kot/karten-backend/src/modules/images"
 	"github.com/lesnoi-kot/karten-backend/src/store"
+	"github.com/lesnoi-kot/karten-backend/src/userservice"
 )
 
 type ProjectDTO struct {
@@ -21,9 +19,8 @@ type ProjectDTO struct {
 }
 
 func (api *APIService) getProjects(c echo.Context) error {
-	userID, _ := getUserID(c)
-
-	projects, err := api.store.Projects.GetAll(context.Background(), userID)
+	userService := api.getUserService(c)
+	projects, err := userService.GetProjects()
 	if err != nil {
 		return err
 	}
@@ -32,16 +29,14 @@ func (api *APIService) getProjects(c echo.Context) error {
 }
 
 func (api *APIService) getProject(c echo.Context) error {
-	id := c.Param("id")
-	userID, _ := getUserID(c)
+	projectID := c.Param("id")
+	userService := api.getUserService(c)
 
-	project, err := api.store.Projects.Get(context.Background(), id)
+	project, err := userService.GetProject(&userservice.GetProjectOptions{
+		ProjectID: projectID,
+	})
 	if err != nil {
 		return err
-	}
-
-	if project.UserID != userID {
-		return echo.ErrForbidden
 	}
 
 	return c.JSON(http.StatusOK, OK(projectToDTO(project)))
@@ -49,9 +44,9 @@ func (api *APIService) getProject(c echo.Context) error {
 
 func (api *APIService) addProject(c echo.Context) error {
 	var body struct {
-		Name string `json:"name" form:"name" validate:"required,min=1,max=32"`
+		Name     string        `json:"name" validate:"required,min=1,max=32"`
+		AvatarID *store.FileID `json:"avatar_id"`
 	}
-
 	if err := c.Bind(&body); err != nil {
 		return err
 	}
@@ -61,70 +56,12 @@ func (api *APIService) addProject(c echo.Context) error {
 		return err
 	}
 
-	userID, _ := getUserID(c)
-	project := &store.Project{UserID: userID, Name: body.Name}
-
-	if avatarFileHeader, err := c.FormFile("avatar"); err == nil {
-		avatarData, err := avatarFileHeader.Open()
-		if err != nil {
-			return err
-		}
-
-		image, err := images.ParseImage(avatarData)
-		if err != nil {
-			return echo.
-				NewHTTPError(http.StatusBadRequest, "Image can't be decoded").
-				SetInternal(err)
-		}
-
-		avatarData, err = avatarFileHeader.Open()
-		if err != nil {
-			return err
-		}
-
-		avatarFile, err := api.store.Files.Add(context.Background(), store.AddFileOptions{
-			Name:     avatarFileHeader.Filename,
-			Data:     avatarData,
-			MIMEType: image.MIMEType,
-		})
-		if err != nil {
-			return fmt.Errorf("Save image for new project error: %w", err)
-		}
-
-		api.logger.Infof("Added avatar for project %s: %s", project.Name, avatarFile.ID)
-
-		avatarData, err = avatarFileHeader.Open()
-		if err != nil {
-			return err
-		}
-
-		thumbnailImageData, err := images.MakeProjectAvatarThumbnail(avatarData)
-		if err != nil {
-			return err
-		}
-
-		thumbnailFile, err := api.store.Files.AddImageThumbnail(context.Background(), store.AddImageThumbnailOptions{
-			AddFileOptions: store.AddFileOptions{
-				Name:     avatarFileHeader.Filename,
-				Data:     thumbnailImageData,
-				MIMEType: image.MIMEType,
-			},
-			OriginalImageFileID: avatarFile.ID,
-		})
-		if err != nil {
-			return fmt.Errorf("Save image for new project error: %w", err)
-		}
-
-		api.logger.Infof("Added avatar thumbnail for project %s: %s", project.Name, thumbnailFile.ID)
-
-		project.AvatarID = avatarFile.ID
-		project.Avatar = &store.ImageFile{
-			File:       *avatarFile,
-			Thumbnails: []store.File{*thumbnailFile},
-		}
-	}
-
-	if err := api.store.Projects.Add(context.Background(), project); err != nil {
+	userService := api.getUserService(c)
+	project, err := userService.AddProject(&userservice.AddProjectOptions{
+		Name:     body.Name,
+		AvatarID: body.AvatarID,
+	})
+	if err != nil {
 		return err
 	}
 
@@ -133,18 +70,12 @@ func (api *APIService) addProject(c echo.Context) error {
 
 func (api *APIService) deleteProject(c echo.Context) error {
 	projectID := c.Param("id")
-	userID, _ := getUserID(c)
+	userService := api.getUserService(c)
 
-	project, err := api.store.Projects.Get(context.Background(), projectID)
+	err := userService.DeleteProject(&userservice.DeleteProjectOptions{
+		ProjectID: projectID,
+	})
 	if err != nil {
-		return err
-	}
-
-	if project.UserID != userID {
-		return echo.ErrForbidden
-	}
-
-	if err := api.store.Projects.Delete(context.Background(), projectID); err != nil {
 		return err
 	}
 
@@ -152,9 +83,7 @@ func (api *APIService) deleteProject(c echo.Context) error {
 }
 
 func (api *APIService) deleteProjects(c echo.Context) error {
-	userID, _ := getUserID(c)
-
-	if err := api.store.Projects.DeleteAll(context.Background(), userID); err != nil {
+	if err := api.getUserService(c).DeleteAllProjects(); err != nil {
 		return err
 	}
 
@@ -162,9 +91,8 @@ func (api *APIService) deleteProjects(c echo.Context) error {
 }
 
 func (api *APIService) clearProject(c echo.Context) error {
-	id := c.Param("id")
-
-	if err := api.store.Projects.Clear(context.Background(), id); err != nil {
+	projectID := c.Param("id")
+	if err := api.getUserService(c).ClearProject(projectID); err != nil {
 		return err
 	}
 
@@ -173,9 +101,9 @@ func (api *APIService) clearProject(c echo.Context) error {
 
 func (api *APIService) editProject(c echo.Context) error {
 	var body struct {
-		Name string `json:"name" validate:"required,min=1,max=32"`
+		Name     *string       `json:"name" validate:"omitempty,min=1,max=32"`
+		AvatarID *store.FileID `json:"avatar_id"`
 	}
-
 	if err := c.Bind(&body); err != nil {
 		return err
 	}
@@ -184,20 +112,24 @@ func (api *APIService) editProject(c echo.Context) error {
 	}
 
 	projectID := c.Param("id")
-	userID, _ := getUserID(c)
-	project, err := api.store.Projects.Get(context.Background(), projectID)
+	userService := api.getUserService(c)
+
+	err := userService.EditProject(&userservice.EditProjectOptions{
+		ProjectID: projectID,
+		Name:      body.Name,
+		AvatarID:  body.AvatarID,
+	})
 	if err != nil {
 		return err
 	}
 
-	if project.UserID != userID {
-		return echo.ErrForbidden
-	}
-
-	project.Name = body.Name
-	if err := api.store.Projects.Update(context.Background(), project); err != nil {
+	project, err := userService.GetProject(&userservice.GetProjectOptions{
+		ProjectID:     projectID,
+		IncludeBoards: false,
+	})
+	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, OK(project))
+	return c.JSON(http.StatusOK, OK(projectToDTO(project)))
 }
