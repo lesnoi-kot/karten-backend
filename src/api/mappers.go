@@ -162,6 +162,7 @@ func userToDTO(user *store.User) *UserDTO {
 		Login:       user.Login,
 		Email:       user.Email,
 		URL:         user.URL,
+		AvatarURL:   urlprovider.GetFileURL(user.Avatar),
 		DateCreated: user.DateCreated,
 	}
 

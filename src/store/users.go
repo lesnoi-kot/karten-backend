@@ -56,7 +56,7 @@ func (s UsersStore) GetBySocialID(ctx context.Context, socialID string) (*User, 
 func (s UsersStore) Add(ctx context.Context, item *User) error {
 	_, err := s.db.NewInsert().
 		Model(item).
-		Column("social_id", "name", "login", "email", "url").
+		Column("social_id", "avatar_id", "name", "login", "email", "url").
 		Returning("*").
 		Exec(ctx)
 	if err != nil {

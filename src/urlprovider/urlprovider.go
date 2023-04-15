@@ -8,6 +8,13 @@ import (
 )
 
 func GetFileURL(file *store.File) string {
-	url, _ := url.JoinPath(settings.AppConfig.MediaURL, file.StorageObjectID)
+	if file == nil {
+		return ""
+	}
+
+	url, err := url.JoinPath(settings.AppConfig.MediaURL, file.StorageObjectID)
+	if err != nil {
+		return ""
+	}
 	return url
 }

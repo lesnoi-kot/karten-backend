@@ -22,6 +22,7 @@ type UserDTO struct {
 	Login       string    `json:"login"`
 	Email       string    `json:"email"`
 	URL         string    `json:"url"`
+	AvatarURL   string    `json:"avatar_url"`
 	DateCreated time.Time `json:"date_created"`
 }
 
@@ -53,7 +54,7 @@ func (api *APIService) oauthCallback(c echo.Context) error {
 	}
 
 	authService := authservice.AuthService{Store: api.store}
-	db_user, err := authService.Authenticate(userInfo)
+	db_user, err := authService.Authenticate(context.Background(), userInfo)
 	if err != nil {
 		return err
 	}
@@ -67,7 +68,7 @@ func (api *APIService) oauthCallback(c echo.Context) error {
 
 func (api *APIService) getCurrentUser(c echo.Context) error {
 	user, ok := c.Get("user").(*store.User)
-	if !ok {
+	if !ok || user == nil {
 		return echo.ErrUnauthorized
 	}
 	return c.JSON(http.StatusOK, OK(userToDTO(user)))

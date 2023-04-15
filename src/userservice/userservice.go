@@ -167,7 +167,7 @@ func (user UserService) GetProjects() ([]*store.Project, error) {
 
 	err := user.Store.ORM.NewSelect().
 		Model(&projects).
-		Where("user_id = ?", user.UserID).
+		Where("project.user_id = ?", user.UserID).
 		Relation("Boards").
 		Relation("Boards.Cover").
 		Relation("Avatar").
