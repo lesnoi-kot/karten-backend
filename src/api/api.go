@@ -145,6 +145,7 @@ func initRoutes(api *APIService) {
 
 	users := root.Group("/users", requireAuth)
 	users.GET("/self", api.getCurrentUser, injectUser)
+	users.DELETE("/self", api.deleteUser)
 	users.POST("/self/logout", api.logOut)
 
 	projects := root.Group("/projects", requireAuth)

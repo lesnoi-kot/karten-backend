@@ -83,7 +83,7 @@ func (s UsersStore) Update(ctx context.Context, item *User) error {
 	return nil
 }
 
-func (s UsersStore) Delete(ctx context.Context, id string) error {
+func (s UsersStore) Delete(ctx context.Context, id UserID) error {
 	result, err := s.db.NewDelete().
 		Model((*User)(nil)).
 		Where("id = ?", id).

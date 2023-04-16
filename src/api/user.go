@@ -100,3 +100,23 @@ func (api *APIService) guestLogIn(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, OK(userToDTO(user)))
 }
+
+func (api *APIService) deleteUser(c echo.Context) error {
+	user := api.mustGetUserService(c)
+
+	if user.UserID == store.GuestUserID {
+		return echo.ErrForbidden
+	}
+
+	if err := user.Delete(); err != nil {
+		return err
+	}
+
+	sess, _ := getUserSession(c)
+	sess.Options.MaxAge = -1
+	if err := sess.Save(c.Request(), c.Response()); err != nil {
+		return fmt.Errorf("Session update error: %w", err)
+	}
+
+	return c.NoContent(http.StatusOK)
+}

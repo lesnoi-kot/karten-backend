@@ -26,11 +26,11 @@ type Repo[T any] interface {
 
 type Entities struct {
 	Users interface {
-		Get(ctx context.Context, id int) (*User, error)
+		Get(ctx context.Context, id UserID) (*User, error)
 		GetBySocialID(ctx context.Context, socialID string) (*User, error)
 		Add(ctx context.Context, item *User) error
 		Update(ctx context.Context, item *User) error
-		Delete(ctx context.Context, id string) error
+		Delete(ctx context.Context, id UserID) error
 	}
 	Boards interface {
 		Repo[Board]

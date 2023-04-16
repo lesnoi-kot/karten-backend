@@ -162,6 +162,10 @@ func (userService *UserService) GetUser(args *GetUserOptions) (*store.User, erro
 	return user, nil
 }
 
+func (user *UserService) Delete() error {
+	return user.Store.Users.Delete(user.Context, user.UserID)
+}
+
 func (user UserService) GetProjects() ([]*store.Project, error) {
 	var projects []*store.Project
 

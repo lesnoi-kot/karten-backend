@@ -49,12 +49,7 @@ func MakeThumbnail(data io.Reader) (io.Reader, error) {
 		return nil, err
 	}
 
-	thumb := resize.Resize(
-		settings.Projects.AvatarThumbnailSize,
-		settings.Projects.AvatarThumbnailSize,
-		img,
-		resize.Bilinear,
-	)
+	thumb := resize.Resize(settings.Projects.AvatarThumbnailSize, 0, img, resize.Bilinear)
 	buff := bytes.NewBuffer(make([]byte, 0, 50*1024))
 
 	if err = png.Encode(buff, thumb); err != nil {
