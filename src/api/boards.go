@@ -82,7 +82,9 @@ func (api *APIService) editBoard(c echo.Context) error {
 		return err
 	}
 
-	*body.Name = strings.TrimSpace(*body.Name)
+	if body.Name != nil {
+		*body.Name = strings.TrimSpace(*body.Name)
+	}
 	if err := c.Validate(&body); err != nil {
 		return err
 	}

@@ -391,20 +391,32 @@ func (user UserService) EditBoard(args *EditBoardOptions) error {
 		Where("id = ?", args.BoardID).
 		Where("user_id = ?", user.UserID)
 
+	changedFields := 0
+
 	if args.Name != nil && *args.Name != "" {
 		q = q.Set("name = ?", *args.Name)
+		changedFields++
 	}
 	if args.Archived != nil {
 		q = q.Set("archived = ?", *args.Archived)
+		changedFields++
 	}
 	if args.Color != nil {
 		q = q.Set("color = ?", *args.Color)
+		q = q.Set("cover_id = ?", nil)
+		changedFields++
 	}
 	if args.Favorite != nil {
 		q = q.Set("favorite = ?", *args.Favorite)
+		changedFields++
 	}
 	if args.CoverID != nil {
 		q = q.Set("cover_id = ?", *args.CoverID)
+		changedFields++
+	}
+
+	if changedFields == 0 {
+		return nil
 	}
 
 	updateResult, err := q.Exec(user.Context)
