@@ -20,8 +20,10 @@ type appConfig struct {
 	SessionsStorePath string `env:"SESSIONS_STORE_PATH"`
 }
 
-var Projects = struct {
+type projectsConfig struct {
 	AvatarThumbnailSize uint // px
-}{
-	AvatarThumbnailSize: 100,
+}
+
+var Projects = projectsConfig{
+	AvatarThumbnailSize: 80,
 }

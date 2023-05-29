@@ -42,12 +42,7 @@ func (suite *baseAPITestSuite) init() {
 	suite.commentsMock = new(mockCommentsStore)
 
 	suite.store = &store.Store{
-		Entities: store.Entities{
-			Boards:    suite.boardsMock,
-			TaskLists: suite.taskListsMock,
-			Tasks:     suite.tasksMock,
-			Comments:  suite.commentsMock,
-		},
+		Entities: store.Entities{},
 	}
 	suite.api = api.NewAPI(api.APIConfig{
 		Store:     suite.store,

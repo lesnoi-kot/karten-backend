@@ -32,20 +32,6 @@ type Entities struct {
 		Update(ctx context.Context, item *User) error
 		Delete(ctx context.Context, id UserID) error
 	}
-	Boards interface {
-		Repo[Board]
-
-		UpdateColumns(ctx context.Context, item *Board, columns ...string) error
-	}
-	TaskLists interface {
-		Repo[TaskList]
-	}
-	Tasks interface {
-		Repo[Task]
-	}
-	Comments interface {
-		Repo[Comment]
-	}
 	Files interface {
 		Get(ctx context.Context, fileID FileID) (*File, error)
 		GetImage(ctx context.Context, fileID FileID) (*ImageFile, error)
@@ -55,6 +41,7 @@ type Entities struct {
 		GetDefaultCovers(ctx context.Context) ([]ImageFile, error)
 		IsDefaultCover(ctx context.Context, fileID FileID) bool
 		IsImage(ctx context.Context, fileID FileID) bool
+		Delete(ctx context.Context, fileID FileID) error
 	}
 }
 
@@ -82,6 +69,9 @@ func NewStore(cfg StoreConfig) (*Store, error) {
 	db := bun.NewDB(stdDB, pgdialect.New())
 
 	db.RegisterModel((*ImageThumbnailAssoc)(nil))
+	db.RegisterModel((*AttachmentToTaskAssoc)(nil))
+	db.RegisterModel((*AttachmentToCommentAssoc)(nil))
+	db.RegisterModel((*LabelToTaskAssoc)(nil))
 
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("DB connection error: %w", err)
@@ -101,12 +91,8 @@ func NewStore(cfg StoreConfig) (*Store, error) {
 		ORM:         db,
 		fileStorage: cfg.FileStorage,
 		Entities: Entities{
-			Users:     UsersStore{db},
-			Boards:    BoardsStore{db},
-			TaskLists: TaskListsStore{db},
-			Tasks:     TasksStore{db},
-			Comments:  CommentsStore{db},
-			Files:     FilesInfoStore{db, cfg.FileStorage},
+			Users: UsersStore{db},
+			Files: FilesInfoStore{db, cfg.FileStorage},
 		},
 	}
 
@@ -164,12 +150,8 @@ func newTxStore(tx bun.Tx, fileStorage filestorage.FileStorage) *TxStore {
 	return &TxStore{
 		tx: tx,
 		Entities: Entities{
-			Users:     UsersStore{tx},
-			Boards:    BoardsStore{tx},
-			TaskLists: TaskListsStore{tx},
-			Tasks:     TasksStore{tx},
-			Comments:  CommentsStore{tx},
-			Files:     FilesInfoStore{tx, fileStorage},
+			Users: UsersStore{tx},
+			Files: FilesInfoStore{tx, fileStorage},
 		},
 	}
 }

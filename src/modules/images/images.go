@@ -43,7 +43,7 @@ func ParseImage(data io.Reader) (*ImageInfo, error) {
 }
 
 // Makes png thumbnail of the input image.
-func MakeThumbnail(data io.Reader) (io.Reader, error) {
+func MakeThumbnail(data io.Reader, width uint) (io.Reader, error) {
 	img, _, err := image.Decode(data)
 	if err != nil {
 		return nil, err
