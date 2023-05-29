@@ -149,3 +149,19 @@ func (s FilesInfoStore) AddImage(ctx context.Context, opts AddFileOptions) (*Ima
 
 	return image, err
 }
+
+func (s FilesInfoStore) Delete(ctx context.Context, fileID FileID) error {
+	result, err := s.db.NewDelete().
+		Model((*File)(nil)).
+		Where("id = ?", fileID).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+
+	if NoRowsAffected(result) {
+		return ErrNotFound
+	}
+
+	return nil
+}

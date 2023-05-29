@@ -7,10 +7,12 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/lesnoi-kot/karten-backend/src/store"
 	"github.com/lesnoi-kot/karten-backend/src/userservice"
+	"github.com/samber/lo"
 )
 
 type ProjectDTO struct {
 	ID                 string      `json:"id"`
+	UserID             int         `json:"user_id"`
 	ShortID            string      `json:"short_id"`
 	Name               string      `json:"name"`
 	AvatarURL          string      `json:"avatar_url,omitempty"`
@@ -19,8 +21,11 @@ type ProjectDTO struct {
 }
 
 func (api *APIService) getProjects(c echo.Context) error {
+	includes := c.QueryParams()["include"]
 	userService := api.mustGetUserService(c)
-	projects, err := userService.GetProjects()
+	projects, err := userService.GetProjects(&userservice.GetProjectsOptions{
+		IncludeBoards: lo.Contains(includes, "boards"),
+	})
 	if err != nil {
 		return err
 	}
@@ -33,7 +38,8 @@ func (api *APIService) getProject(c echo.Context) error {
 	userService := api.mustGetUserService(c)
 
 	project, err := userService.GetProject(&userservice.GetProjectOptions{
-		ProjectID: projectID,
+		ProjectID:     projectID,
+		IncludeBoards: true,
 	})
 	if err != nil {
 		return err

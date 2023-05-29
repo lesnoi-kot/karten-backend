@@ -10,6 +10,7 @@ import (
 func projectToDTO(project *store.Project) *ProjectDTO {
 	dto := &ProjectDTO{
 		ID:      project.ID,
+		UserID:  project.UserID,
 		ShortID: project.ShortID,
 		Name:    project.Name,
 	}
@@ -77,6 +78,7 @@ func filesToDTO(files []*store.File) []*FileDTO {
 func boardToDTO(board *store.Board) *BoardDTO {
 	dto := &BoardDTO{
 		ID:             board.ID,
+		UserID:         board.UserID,
 		ShortID:        board.ShortID,
 		Name:           board.Name,
 		ProjectID:      board.ProjectID,
@@ -85,6 +87,10 @@ func boardToDTO(board *store.Board) *BoardDTO {
 		DateCreated:    board.DateCreated,
 		DateLastViewed: board.DateLastViewed,
 		Color:          board.Color,
+	}
+
+	if board.Project != nil {
+		dto.ProjectName = board.Project.Name
 	}
 
 	if board.Cover != nil {
@@ -97,6 +103,12 @@ func boardToDTO(board *store.Board) *BoardDTO {
 		})
 	}
 
+	if len(board.Labels) > 0 {
+		dto.Labels = lo.Map(board.Labels, func(label *store.Label, index int) *LabelDTO {
+			return labelToDTO(label)
+		})
+	}
+
 	return dto
 }
 
@@ -104,6 +116,7 @@ func taskListToDTO(taskList *store.TaskList) *TaskListDTO {
 	dto := &TaskListDTO{
 		ID:          taskList.ID,
 		BoardID:     taskList.BoardID,
+		UserID:      taskList.UserID,
 		Position:    taskList.Position,
 		Name:        taskList.Name,
 		Archived:    taskList.Archived,
@@ -120,22 +133,48 @@ func taskListToDTO(taskList *store.TaskList) *TaskListDTO {
 	return dto
 }
 
+func labelToDTO(label *store.Label) *LabelDTO {
+	return &LabelDTO{
+		ID:      label.ID,
+		BoardID: label.BoardID,
+		UserID:  label.UserID,
+		Name:    label.Name,
+		Color:   label.Color,
+	}
+}
+
 func taskToDTO(task *store.Task) *TaskDTO {
 	dto := &TaskDTO{
-		ID:          task.ID,
-		ShortID:     task.ShortID,
-		TaskListID:  task.TaskListID,
-		Position:    task.Position,
-		Name:        task.Name,
-		Text:        task.Text,
-		Archived:    task.Archived,
-		DateCreated: task.DateCreated,
-		DueDate:     task.DueDate,
+		ID:                  task.ID,
+		UserID:              task.UserID,
+		ShortID:             task.ShortID,
+		TaskListID:          task.TaskListID,
+		Position:            task.Position,
+		SpentTime:           task.SpentTime,
+		Name:                task.Name,
+		Text:                task.Text,
+		HTML:                task.HTML,
+		Archived:            task.Archived,
+		DateCreated:         task.DateCreated,
+		DateStartedTracking: task.DateStartedTracking,
+		DueDate:             task.DueDate,
 	}
 
 	if len(task.Comments) > 0 {
 		dto.Comments = lo.Map(task.Comments, func(comment *store.Comment, index int) *CommentDTO {
 			return commentToDTO(comment)
+		})
+	}
+
+	if len(task.Attachments) > 0 {
+		dto.Attachments = lo.Map(task.Attachments, func(file *store.File, index int) *FileDTO {
+			return fileToDTO(file)
+		})
+	}
+
+	if len(task.Labels) > 0 {
+		dto.Labels = lo.Map(task.Labels, func(file *store.Label, index int) *LabelDTO {
+			return labelToDTO(file)
 		})
 	}
 
@@ -148,7 +187,18 @@ func commentToDTO(comment *store.Comment) *CommentDTO {
 		TaskID:      comment.TaskID,
 		UserID:      comment.UserID,
 		Text:        comment.Text,
+		HTML:        comment.HTML,
 		DateCreated: comment.DateCreated,
+	}
+
+	if len(comment.Attachments) > 0 {
+		dto.Attachments = lo.Map(comment.Attachments, func(file *store.File, index int) *FileDTO {
+			return fileToDTO(file)
+		})
+	}
+
+	if comment.Author != nil {
+		dto.Author = publicUserToDTO(comment.Author)
 	}
 
 	return dto
@@ -162,6 +212,17 @@ func userToDTO(user *store.User) *UserDTO {
 		Login:       user.Login,
 		Email:       user.Email,
 		URL:         user.URL,
+		AvatarURL:   urlprovider.GetFileURL(user.Avatar),
+		DateCreated: user.DateCreated,
+	}
+
+	return dto
+}
+
+func publicUserToDTO(user *store.User) *PublicUserDTO {
+	dto := &PublicUserDTO{
+		ID:          user.ID,
+		Name:        user.Name,
 		AvatarURL:   urlprovider.GetFileURL(user.Avatar),
 		DateCreated: user.DateCreated,
 	}

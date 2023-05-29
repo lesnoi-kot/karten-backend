@@ -6,7 +6,8 @@ INSERT INTO users (social_id, name) VALUES ('karten', 'guest');
 
 INSERT INTO files (id, storage_object_id, name, mime_type, size) VALUES
   ('fd5f451d-fac6-4bc7-a677-34adb39a6701', 'covers_1.jpg', 'Cover', 'image/jpeg', 0),
-  ('2f146153-ee2f-4968-a241-11a4f00bf212', 'covers_2.jpg', 'Cover', 'image/jpeg', 0)
+  ('2f146153-ee2f-4968-a241-11a4f00bf212', 'covers_2.jpg', 'Cover', 'image/jpeg', 0),
+  ('40a49f7a-f3b4-4dc4-8b8d-5a7c8e6ccd8b', '40a49f7a-f3b4-4dc4-8b8d-5a7c8e6ccd8b', 'Godot.mp3', 'audio/mpeg', 2399921)
 ;
 
 INSERT INTO default_cover_images (id) VALUES
@@ -62,6 +63,16 @@ INSERT INTO task_lists (
   (gen_random_uuid(), '250bf7a7-ad51-4d62-85cd-c554e4d5f686', 1, 'Expenses', 100, false, 0)
 ;
 
+INSERT INTO labels (
+  board_id,
+  user_id,
+  name,
+  color
+) VALUES
+  ('29e247c3-69f1-4397-8bab-b1dd10ae28b2', 1, 'Will not do', 11552306),
+  ('29e247c3-69f1-4397-8bab-b1dd10ae28b2', 1, 'Canceled', 11552306)
+;
+
 INSERT INTO tasks (
   id,
   task_list_id,
@@ -86,6 +97,10 @@ INSERT INTO tasks (
   (gen_random_uuid(), '7a43965d-048e-4272-9d00-d15f67bbeb81', 1, 'https://www.youtube.com/watch?v=Ayx0fEe7gcg', '', 200)
 ;
 
+INSERT INTO task_labels (label_id, task_id) VALUES
+  (1, '3a0c9a3b-bbec-4047-9822-1c4806c2a258'),
+  (2, '3a0c9a3b-bbec-4047-9822-1c4806c2a258');
+
 INSERT INTO comments (task_id, user_id, text) VALUES
   ('522a2569-caf5-4c59-8d95-5670ed8378d3', 1, 'https://www.jamieoliver.com/recipes/vegetables-recipes/the-perfect-chips/'),
   ('3a0c9a3b-bbec-4047-9822-1c4806c2a258', 1, 'Read a book about computational geometry'),
@@ -96,5 +111,8 @@ INSERT INTO comments (task_id, user_id, text) VALUES
   ('422eafc4-e488-47b3-9eb4-efd99162bd3d', 1, 'See the movie'),
   ('0f10f18a-bd51-4822-a44f-f5786baf5d07', 1, 'Buy mint meat')
 ;
+
+INSERT INTO task_files (task_id, file_id) VALUES
+  ('3a0c9a3b-bbec-4047-9822-1c4806c2a258', '40a49f7a-f3b4-4dc4-8b8d-5a7c8e6ccd8b');
 
 COMMIT;

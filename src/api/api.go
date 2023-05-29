@@ -165,25 +165,42 @@ func initRoutes(api *APIService) {
 	boards.PUT("/:id/favorite", api.favoriteBoard)
 	boards.DELETE("/:id/favorite", api.unfavoriteBoard)
 	boards.POST("/:id/task-lists", api.addTaskList)
+	boards.POST("/:id/labels", api.addLabel)
 
 	taskLists := root.Group("/task-lists", requireAuth)
 	taskLists.GET("/:id", api.getTaskList)
 	taskLists.PATCH("/:id", api.editTaskList)
 	taskLists.DELETE("/:id", api.deleteTaskList)
 	taskLists.POST("/:id/tasks", api.addTask)
+	taskLists.DELETE("/:id/tasks", api.clearTaskList)
 
 	tasks := root.Group("/tasks", requireAuth)
 	tasks.GET("/:id", api.getTask)
 	tasks.PATCH("/:id", api.editTask)
 	tasks.DELETE("/:id", api.deleteTask)
 	tasks.POST("/:id/comments", api.addComment)
+	tasks.POST("/:id/attachments", api.addTaskAttachments)
+	tasks.DELETE("/:id/attachments", api.deleteTaskAttachment)
+	tasks.POST("/:id/tracking", api.startTaskTracking)
+	tasks.DELETE("/:id/tracking", api.stopTaskTracking)
+	tasks.POST("/:id/labels", api.addLabelToTask)
+	tasks.DELETE("/:id/labels", api.deleteLabelFromTask)
 
 	comments := root.Group("/comments", requireAuth)
+	comments.GET("/:id", api.getComment)
 	comments.PATCH("/:id", api.editComment)
 	comments.DELETE("/:id", api.deleteComment)
+	comments.POST("/:id/attachments", api.addCommentAttachments)
+	comments.DELETE("/:id/attachments", api.deleteCommentAttachment)
 
 	files := root.Group("/files", requireAuth)
+	files.POST("", api.uploadFile)
 	files.POST("/image", api.uploadImage)
+	files.DELETE("/:id", api.deleteFile)
+
+	labels := root.Group("/labels", requireAuth)
+	labels.PATCH("/:id", api.editLabel)
+	labels.DELETE("/:id", api.deleteLabel)
 }
 
 func (api *APIService) ping(c echo.Context) error {

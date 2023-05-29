@@ -8,22 +8,39 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/lesnoi-kot/karten-backend/src/store"
+	"github.com/lesnoi-kot/karten-backend/src/userservice"
 )
 
 type CommentDTO struct {
 	ID          string    `json:"id"`
 	TaskID      string    `json:"task_id"`
 	UserID      int       `json:"user_id"`
-	Author      string    `json:"author"`
 	Text        string    `json:"text"`
+	HTML        string    `json:"html"`
 	DateCreated time.Time `json:"date_created"`
+
+	Author      *PublicUserDTO `json:"author"`
+	Attachments []*FileDTO     `json:"attachments"`
+}
+
+func (api *APIService) getComment(c echo.Context) error {
+	commentID := c.Param("id")
+	user := api.mustGetUserService(c)
+	comment, err := user.GetComment(&userservice.GetCommentOptions{
+		CommentID: commentID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, OK(commentToDTO(comment)))
 }
 
 func (api *APIService) addComment(c echo.Context) error {
 	var body struct {
-		Text string `json:"text" validate:"required,min=1,max=32"`
+		Text        string   `json:"text" validate:"required,min=1"`
+		Attachments []string `json:"attachments"`
 	}
-
 	if err := c.Bind(&body); err != nil {
 		return err
 	}
@@ -34,67 +51,116 @@ func (api *APIService) addComment(c echo.Context) error {
 	}
 
 	taskID := c.Param("id")
-	userID, _ := getUserID(c)
-	comment := &store.Comment{
-		TaskID: taskID,
-		UserID: userID,
-		Text:   body.Text,
-	}
+	user := api.mustGetUserService(c)
 
-	if err := api.store.Comments.Add(context.Background(), comment); err != nil {
+	comment, err := user.AddComment(&userservice.AddCommentOptions{
+		TaskID: taskID,
+		Text:   body.Text,
+	})
+	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, OK(comment))
+	err = user.AttachFilesToComment(&userservice.AttachFilesToComment{
+		CommentID: comment.ID,
+		FilesID:   body.Attachments,
+	})
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, OK(commentToDTO(comment)))
 }
 
 func (api *APIService) editComment(c echo.Context) error {
 	var body struct {
-		Text string `json:"text" validate:"required,min=1,max=32"`
+		Text *string `json:"text" validate:"omitempty,min=1"`
 	}
-
 	if err := c.Bind(&body); err != nil {
 		return err
 	}
 
-	body.Text = strings.TrimSpace(body.Text)
+	if body.Text != nil {
+		*body.Text = strings.TrimSpace(*body.Text)
+	}
 	if err := c.Validate(&body); err != nil {
 		return err
 	}
 
-	id := c.Param("id")
-	comment, err := api.store.Comments.Get(context.Background(), id)
+	commentID := c.Param("id")
+	user := api.mustGetUserService(c)
+
+	err := user.EditComment(&userservice.EditCommentOptions{
+		CommentID: commentID,
+		Text:      body.Text,
+	})
 	if err != nil {
 		return err
 	}
 
-	userID, _ := getUserID(c)
-	if comment.UserID != userID {
-		return echo.ErrForbidden
-	}
-
-	comment.Text = body.Text
-	if err := api.store.Comments.Update(context.Background(), comment); err != nil {
+	comment, err := user.GetComment(&userservice.GetCommentOptions{CommentID: commentID})
+	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, OK(comment))
+	return c.JSON(http.StatusOK, OK(commentToDTO(comment)))
 }
 
 func (api *APIService) deleteComment(c echo.Context) error {
 	commentID := c.Param("id")
+	user := api.mustGetUserService(c)
 
-	comment, err := api.store.Comments.Get(context.Background(), commentID)
+	err := user.DeleteComment(&userservice.DeleteCommentOptions{CommentID: commentID})
 	if err != nil {
 		return err
 	}
 
-	userID, _ := getUserID(c)
-	if comment.UserID != userID {
-		return echo.ErrForbidden
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (api *APIService) addCommentAttachments(c echo.Context) error {
+	var body struct {
+		FilesID []string `json:"files_id" validate:"required"`
+	}
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+	if err := c.Validate(&body); err != nil {
+		return err
 	}
 
-	if err := api.store.Comments.Delete(context.Background(), commentID); err != nil {
+	commentID := c.Param("id")
+	user := api.mustGetUserService(c)
+
+	err := user.AttachFilesToComment(&userservice.AttachFilesToComment{
+		CommentID: commentID,
+		FilesID:   body.FilesID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (api *APIService) deleteCommentAttachment(c echo.Context) error {
+	var body struct {
+		FileID string `json:"file_id" validate:"required"`
+	}
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+	if err := c.Validate(&body); err != nil {
+		return err
+	}
+
+	commentID := c.Param("id")
+	_, err := api.store.ORM.NewDelete().
+		Model((*store.AttachmentToCommentAssoc)(nil)).
+		Where("comment_id = ?", commentID).
+		Where("file_id = ?", body.FileID).
+		Exec(context.Background())
+	if err != nil {
 		return err
 	}
 

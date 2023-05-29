@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 type BoardDTO struct {
 	ID             string      `json:"id"`
 	ShortID        string      `json:"short_id"`
+	UserID         int         `json:"user_id"`
 	Name           string      `json:"name"`
 	ProjectID      string      `json:"project_id"`
 	Archived       bool        `json:"archived"`
@@ -22,7 +24,9 @@ type BoardDTO struct {
 	Color          store.Color `json:"color"`
 	CoverURL       string      `json:"cover_url,omitempty"`
 
-	TaskLists []*TaskListDTO `json:"task_lists,omitempty"`
+	ProjectName string         `json:"project_name"`
+	TaskLists   []*TaskListDTO `json:"task_lists,omitempty"`
+	Labels      []*LabelDTO    `json:"labels,omitempty"`
 }
 
 func (api *APIService) getBoard(c echo.Context) error {
@@ -33,6 +37,7 @@ func (api *APIService) getBoard(c echo.Context) error {
 		BoardID:          boardID,
 		IncludeTaskLists: mode != "shallow",
 		IncludeTasks:     mode != "shallow",
+		IncludeProject:   true,
 	})
 	if err != nil {
 		return err
@@ -146,4 +151,88 @@ func (api *APIService) favoriteBoard(c echo.Context) error {
 
 func (api *APIService) unfavoriteBoard(c echo.Context) error {
 	return api.setFavoriteBoard(c, false)
+}
+
+func (api *APIService) addLabel(c echo.Context) error {
+	var body struct {
+		Name  string `json:"name" validate:"required,min=1,max=32"`
+		Color int    `json:"color"`
+	}
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	body.Name = strings.TrimSpace(body.Name)
+	if err := c.Validate(&body); err != nil {
+		return err
+	}
+
+	boardID := c.Param("id")
+	userService := api.mustGetUserService(c)
+	label, err := userService.AddLabel(&userservice.AddLabelOptions{
+		BoardID: boardID,
+		Name:    body.Name,
+		Color:   body.Color,
+	})
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, OK(labelToDTO(label)))
+}
+
+func (api *APIService) deleteLabel(c echo.Context) error {
+	labelID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return err
+	}
+
+	userService := api.mustGetUserService(c)
+	err = userService.DeleteLabel(&userservice.DeleteLabelOptions{
+		LabelID: labelID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+func (api *APIService) editLabel(c echo.Context) error {
+	var body struct {
+		Name  *string      `json:"name" validate:"omitempty,min=1,max=32"`
+		Color *store.Color `json:"color"`
+	}
+	if err := c.Bind(&body); err != nil {
+		return err
+	}
+
+	if body.Name != nil {
+		*body.Name = strings.TrimSpace(*body.Name)
+	}
+	if err := c.Validate(&body); err != nil {
+		return err
+	}
+
+	labelID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return err
+	}
+
+	userService := api.mustGetUserService(c)
+	err = userService.EditLabel(&userservice.EditLabelOptions{
+		LabelID: labelID,
+		Name:    body.Name,
+		Color:   body.Color,
+	})
+	if err != nil {
+		return err
+	}
+
+	label, err := userService.GetLabel(labelID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, OK(labelToDTO(label)))
 }

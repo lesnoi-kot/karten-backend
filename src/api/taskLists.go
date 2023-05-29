@@ -13,6 +13,7 @@ import (
 type TaskListDTO struct {
 	ID          string      `json:"id"`
 	BoardID     string      `json:"board_id"`
+	UserID      int         `json:"user_id"`
 	Name        string      `json:"name"`
 	Archived    bool        `json:"archived"`
 	Position    int64       `json:"position"`
@@ -112,6 +113,20 @@ func (api *APIService) deleteTaskList(c echo.Context) error {
 	userService := api.mustGetUserService(c)
 
 	err := userService.DeleteTaskList(&userservice.DeleteTaskListOptions{
+		TaskListID: taskListID,
+	})
+	if err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (api *APIService) clearTaskList(c echo.Context) error {
+	taskListID := c.Param("id")
+	userService := api.mustGetUserService(c)
+
+	err := userService.ClearTaskList(&userservice.ClearTaskListOptions{
 		TaskListID: taskListID,
 	})
 	if err != nil {

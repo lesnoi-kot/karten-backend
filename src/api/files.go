@@ -9,6 +9,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/lesnoi-kot/karten-backend/src/modules/images"
+	"github.com/lesnoi-kot/karten-backend/src/settings"
 	"github.com/lesnoi-kot/karten-backend/src/store"
 )
 
@@ -77,7 +78,7 @@ func (api *APIService) uploadImage(c echo.Context) error {
 	api.logger.Debugf("Added image %s", dbFile.ID)
 
 	if make_thumbnail {
-		thumbnail, err := images.MakeThumbnail(bytes.NewReader(data))
+		thumbnail, err := images.MakeThumbnail(bytes.NewReader(data), settings.Projects.AvatarThumbnailSize)
 		if err != nil {
 			return err
 		}
@@ -99,4 +100,45 @@ func (api *APIService) uploadImage(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, OK(imageFileToDTO(dbFile)))
+}
+
+func (api *APIService) uploadFile(c echo.Context) error {
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		return err
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		return err
+	}
+
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	dbFile, err := api.store.Files.Add(context.Background(), store.AddFileOptions{
+		Name:     fileHeader.Filename,
+		Data:     bytes.NewReader(data),
+		MIMEType: http.DetectContentType(data),
+	})
+	if err != nil {
+		return fmt.Errorf("Save file error: %w", err)
+	}
+
+	api.logger.Debugf("Added file %s", dbFile.ID)
+
+	return c.JSON(http.StatusOK, OK(fileToDTO(dbFile)))
+}
+
+func (api *APIService) deleteFile(c echo.Context) error {
+	fileID := c.Param("id")
+	err := api.store.Files.Delete(context.Background(), fileID)
+	if err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusOK)
 }

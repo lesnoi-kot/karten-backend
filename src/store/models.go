@@ -12,6 +12,7 @@ type (
 	UserID     = int
 	FileID     = string
 	EntityID   = string
+	LabelID    = int
 	DateString = string
 	Color      = int
 )
@@ -34,11 +35,11 @@ type User struct {
 type File struct {
 	bun.BaseModel `bun:"table:files"`
 
-	ID              FileID             `bun:",pk" json:"id"`
-	StorageObjectID filestorage.FileID `json:"storage_object_id"`
-	Name            string             `json:"name"`
-	MimeType        string             `json:"mime_type"`
-	Size            int                `json:"size"`
+	ID              FileID `bun:",pk"`
+	StorageObjectID filestorage.FileID
+	Name            string
+	MimeType        string
+	Size            int
 }
 
 func (file *File) IsImage() bool {
@@ -49,28 +50,11 @@ func (file *File) IsImage() bool {
 	return strings.HasPrefix(file.MimeType, "image/")
 }
 
-type ImageThumbnailAssoc struct {
-	bun.BaseModel `bun:"table:image_thumbnails"`
-
-	ID      FileID `bun:",pk"` // Thumbnail File.ID
-	ImageID FileID // Original image File.ID
-
-	// ORM many-to-many magic:
-	Original  *File `bun:"rel:belongs-to,join:image_id=id" json:"-"`
-	Thumbnail *File `bun:"rel:belongs-to,join:id=id" json:"-"`
-}
-
 type ImageFile struct {
 	bun.BaseModel `bun:"table:files"`
 	File
 
-	Thumbnails []*File `bun:"m2m:image_thumbnails,join:Original=Thumbnail" json:"thumbnails,omitempty"`
-}
-
-type CoverImageToFileAssoc struct {
-	bun.BaseModel `bun:"table:default_cover_images"`
-
-	ID EntityID `bun:",pk" json:"id"`
+	Thumbnails []*File `bun:"m2m:image_thumbnails,join:Original=Thumbnail"`
 }
 
 type Board struct {
@@ -89,6 +73,8 @@ type Board struct {
 	CoverID        *FileID `bun:"cover_id,nullzero"`
 
 	TaskLists []*TaskList `bun:"rel:has-many,join:id=board_id"`
+	Labels    []*Label    `bun:"rel:has-many,join:id=board_id"`
+	Project   *Project    `bun:"rel:belongs-to,join:project_id=id"`
 	Cover     *File       `bun:"rel:has-one,join:cover_id=id"`
 }
 
@@ -109,18 +95,25 @@ type Project struct {
 type Task struct {
 	bun.BaseModel `bun:"table:tasks"`
 
-	ID          EntityID `bun:",pk,autoincrement" json:"id"`
-	UserID      UserID
-	ShortID     string     `json:"short_id"`
-	TaskListID  EntityID   `bun:"task_list_id" json:"task_list_id"`
-	Name        string     `json:"name"`
-	Text        string     `json:"text"`
-	Position    int64      `json:"position"`
-	Archived    bool       `json:"archived"`
-	DateCreated time.Time  `json:"date_created"`
-	DueDate     *time.Time `bun:"due_date,nullzero" json:"due_date,omitempty"`
+	ID                  EntityID `bun:",pk"`
+	UserID              UserID
+	ShortID             string
+	TaskListID          EntityID
+	Name                string
+	Text                string
+	Position            int64
+	SpentTime           int64
+	Archived            bool
+	DateCreated         time.Time
+	DateStartedTracking *time.Time `bun:",nullzero"`
+	DueDate             *time.Time `bun:",nullzero"`
 
-	Comments []*Comment `bun:"rel:has-many,join:id=task_id" json:"comments,omitempty"`
+	Comments    []*Comment `bun:"rel:has-many,join:id=task_id"`
+	Attachments []*File    `bun:"m2m:task_files,join:Task=File"`
+	Labels      []*Label   `bun:"m2m:task_labels,join:Task=Label"`
+
+	// Rendered Text markdown
+	HTML string `bun:"-"`
 }
 
 type TaskList struct {
@@ -141,9 +134,75 @@ type TaskList struct {
 type Comment struct {
 	bun.BaseModel `bun:"table:comments"`
 
-	ID          EntityID `bun:",pk" json:"id"`
+	ID          EntityID `bun:",pk"`
 	UserID      UserID
 	TaskID      EntityID
 	Text        string
 	DateCreated time.Time
+
+	// Rendered Text markdown
+	HTML string `bun:"-"`
+
+	Author      *User   `bun:"rel:belongs-to,join:user_id=id"`
+	Attachments []*File `bun:"m2m:comment_files,join:Comment=File"`
+}
+
+type Label struct {
+	bun.BaseModel `bun:"table:labels"`
+
+	ID      LabelID `bun:",pk"`
+	BoardID EntityID
+	UserID  UserID
+	Name    string
+	Color   int
+}
+
+type ImageThumbnailAssoc struct {
+	bun.BaseModel `bun:"table:image_thumbnails"`
+
+	ID      FileID `bun:",pk"` // Thumbnail File.ID
+	ImageID FileID // Original image File.ID
+
+	// ORM many-to-many magic:
+	Original  *File `bun:"rel:belongs-to,join:image_id=id"`
+	Thumbnail *File `bun:"rel:belongs-to,join:id=id"`
+}
+
+type CoverImageToFileAssoc struct {
+	bun.BaseModel `bun:"table:default_cover_images"`
+
+	ID EntityID `bun:",pk"`
+}
+
+type AttachmentToTaskAssoc struct {
+	bun.BaseModel `bun:"table:task_files"`
+
+	TaskID EntityID `bun:",pk"`
+	FileID FileID   `bun:",pk"`
+
+	// ORM many-to-many magic:
+	Task *Task `bun:"rel:belongs-to,join:task_id=id"`
+	File *File `bun:"rel:belongs-to,join:file_id=id"`
+}
+
+type AttachmentToCommentAssoc struct {
+	bun.BaseModel `bun:"table:comment_files"`
+
+	CommentID EntityID `bun:",pk"`
+	FileID    FileID   `bun:",pk"`
+
+	// ORM many-to-many magic:
+	Comment *Comment `bun:"rel:belongs-to,join:comment_id=id"`
+	File    *File    `bun:"rel:belongs-to,join:file_id=id"`
+}
+
+type LabelToTaskAssoc struct {
+	bun.BaseModel `bun:"table:task_labels"`
+
+	LabelID LabelID  `bun:",pk"`
+	TaskID  EntityID `bun:",pk"`
+
+	// ORM many-to-many magic:
+	Label *Label `bun:"rel:belongs-to,join:label_id=id"`
+	Task  *Task  `bun:"rel:belongs-to,join:task_id=id"`
 }

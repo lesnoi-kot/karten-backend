@@ -26,6 +26,13 @@ type UserDTO struct {
 	DateCreated time.Time `json:"date_created"`
 }
 
+type PublicUserDTO struct {
+	ID          int       `json:"id"`
+	Name        string    `json:"name"`
+	AvatarURL   string    `json:"avatar_url"`
+	DateCreated time.Time `json:"date_created"`
+}
+
 func (api *APIService) oauthCallback(c echo.Context) error {
 	oauth_code := c.QueryParam("code")
 	oauth_authorizer := c.QueryParam("authorizer")
