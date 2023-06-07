@@ -1,7 +1,3 @@
-SET search_path TO karten;
-
-BEGIN;
-
 INSERT INTO users (social_id, name) VALUES ('karten', 'guest');
 
 INSERT INTO files (id, storage_object_id, name, mime_type, size) VALUES
@@ -114,5 +110,3 @@ INSERT INTO comments (task_id, user_id, text) VALUES
 
 INSERT INTO task_files (task_id, file_id) VALUES
   ('3a0c9a3b-bbec-4047-9822-1c4806c2a258', '40a49f7a-f3b4-4dc4-8b8d-5a7c8e6ccd8b');
-
-COMMIT;

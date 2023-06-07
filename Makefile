@@ -4,6 +4,10 @@ SHELL=/bin/sh
 start-dev:
 	docker compose -f docker-compose.dev.yml up
 
+.PHONY: build-migrator-image
+build-migrator-image:
+	docker build -t karten-backend-migrator:latest --target=migrator .
+
 .PHONY: rm-dev-db
 rm-dev-db:
 	docker compose -f docker-compose.dev.yml rm -sv db

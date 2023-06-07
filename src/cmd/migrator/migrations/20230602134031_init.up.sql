@@ -1,8 +1,3 @@
-BEGIN;
-
-CREATE SCHEMA karten;
-SET search_path TO karten;
-
 CREATE TABLE files (
   id                   uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   storage_object_id    text UNIQUE NOT NULL CHECK (length("storage_object_id") > 0),
@@ -113,5 +108,3 @@ CREATE TABLE comment_files (
   file_id      uuid REFERENCES files ON DELETE CASCADE,
   PRIMARY KEY (comment_id, file_id)
 );
-
-COMMIT;

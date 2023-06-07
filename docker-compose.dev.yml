@@ -2,10 +2,11 @@ services:
   karten:
     image: cosmtrek/air:v1.42.0
     environment:
-      DEBUG: "1"
+      DEBUG: true
       API_HOST: "0.0.0.0:4000"
       STORE_DSN: "postgres://karten:karten@db:5432/karten?sslmode=disable&search_path=karten"
       FILE_STORAGE_PATH: "/app/media"
+      SESSIONS_STORE_PATH: "/tmp"
 
       ALLOW_ORIGINS: ${ALLOW_ORIGINS:-http://127.0.0.1:3000}
       MEDIA_URL: ${MEDIA_URL:-http://127.0.0.1:4001}
@@ -17,6 +18,18 @@ services:
     working_dir: /app
     ports:
       - 127.0.0.1:4000:4000
+    depends_on:
+      - db
+
+  migrator:
+    build:
+      context: '.'
+      target: migrator
+    depends_on:
+      - db
+    environment:
+      STORE_DSN: "postgres://karten:karten@db:5432/karten?sslmode=disable&search_path=karten"
+    command: [ "db", "migrate" ]
 
   db:
     image: postgres:15.1-alpine
@@ -26,8 +39,6 @@ services:
       POSTGRES_DB: karten
     volumes:
       - pg_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/01_init.sql
-      - ./fixtures.sql:/docker-entrypoint-initdb.d/02_fixtures.sql
     ports:
       - 127.0.0.1:5432:5432
 

@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	logger := prepareLogger(os.Getenv("DEBUG") != "")
+	logger := prepareLogger(os.Getenv("DEBUG") == "true")
 	defer logger.Sync()
 
 	if err := env.Parse(&settings.AppConfig); err != nil {
@@ -92,6 +92,9 @@ func printConfigs(logger *zap.SugaredLogger) {
 	logger.Infow("Karten config",
 		"Debug", settings.AppConfig.Debug,
 		"APIBindAddress", settings.AppConfig.APIBindAddress,
+		"APIPrefix", settings.AppConfig.APIPrefix,
+		"FrontendURL", settings.AppConfig.FrontendURL,
+		"FileStoragePath", settings.AppConfig.FileStoragePath,
 		"AllowOrigins", strings.Join(settings.AppConfig.AllowOrigins, ", "),
 	)
 }

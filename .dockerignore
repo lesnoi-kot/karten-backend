@@ -1,3 +1,8 @@
 media
 .vscode
 .git
+.github
+tmp
+main
+Dockerfile
+docker-compose.*.yml

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gorilla/sessions"
@@ -76,7 +77,7 @@ func NewAPI(cfg APIConfig) *APIService {
 	csrfConfig := middleware.CSRFConfig{
 		CookieSameSite: http.SameSiteStrictMode,
 		CookieDomain:   cfg.CookieDomain,
-		CookieSecure:   !cfg.Debug,
+		CookieSecure:   !cfg.Debug && cfg.CookieDomain != "" && strings.HasPrefix(cfg.FrontendURL, "https://"),
 		CookiePath:     "/",
 	}
 
@@ -139,7 +140,7 @@ func initRoutes(api *APIService) {
 	root.GET("/cover-images", api.getCoverImages)
 	root.GET("/oauth-callback", api.oauthCallback)
 
-	if api.debug {
+	if settings.AppConfig.EnableGuest {
 		root.POST("/login", api.guestLogIn)
 	}
 
