@@ -1,4 +1,4 @@
-ARG GO_VERSION="1.19.9"
+ARG GO_VERSION="1.21"
 
 FROM golang:${GO_VERSION}-alpine as deps
 WORKDIR /app
