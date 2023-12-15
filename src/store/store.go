@@ -64,7 +64,7 @@ type StoreConfig struct {
 	FileStorage filestorage.FileStorage
 }
 
-func NewStore(cfg StoreConfig) (*Store, error) {
+func NewStore(cfg StoreConfig) *Store {
 	stdDB := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(cfg.DSN)))
 	db := bun.NewDB(stdDB, pgdialect.New())
 
@@ -72,10 +72,6 @@ func NewStore(cfg StoreConfig) (*Store, error) {
 	db.RegisterModel((*AttachmentToTaskAssoc)(nil))
 	db.RegisterModel((*AttachmentToCommentAssoc)(nil))
 	db.RegisterModel((*LabelToTaskAssoc)(nil))
-
-	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("DB connection error: %w", err)
-	}
 
 	if cfg.Debug {
 		db.AddQueryHook(bundebug.NewQueryHook(
@@ -96,7 +92,15 @@ func NewStore(cfg StoreConfig) (*Store, error) {
 		},
 	}
 
-	return store, nil
+	return store
+}
+
+func (s *Store) Ping() error {
+	if err := s.ORM.Ping(); err != nil {
+		return fmt.Errorf("DB connection error: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Store) Close() error {

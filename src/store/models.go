@@ -17,6 +17,8 @@ type (
 	Color      = int
 )
 
+const GuestUserID = 1
+
 type User struct {
 	bun.BaseModel `bun:"table:users"`
 

@@ -30,13 +30,13 @@ func main() {
 		logger.Fatalw("FileSystemStorage initialization error", "error", err)
 	}
 
-	storeService, err := store.NewStore(store.StoreConfig{
+	storeService := store.NewStore(store.StoreConfig{
 		DSN:         settings.AppConfig.StoreDSN,
 		FileStorage: fileStorage,
 		Logger:      logger,
 		Debug:       settings.AppConfig.Debug,
 	})
-	if err != nil {
+	if err = storeService.Ping(); err != nil {
 		logger.Fatalw("DB connection error", "error", err)
 	}
 

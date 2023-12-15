@@ -43,10 +43,6 @@ func newDBCommand(migrations *migrate.Migrations) *cli.Command {
 					db := mustOpenDB()
 					migrator := migrate.NewMigrator(db, migrations)
 
-					if _, err := db.ExecContext(c.Context, "CREATE SCHEMA IF NOT EXISTS AUTHORIZATION karten"); err != nil {
-						return err
-					}
-
 					if err := migrator.Init(c.Context); err != nil {
 						return err
 					}
@@ -121,7 +117,7 @@ func newDBCommand(migrations *migrate.Migrations) *cli.Command {
 				Name:  "create_sql",
 				Usage: "create up and down SQL migrations",
 				Action: func(c *cli.Context) error {
-					migrator := migrate.NewMigrator(mustOpenDB(), migrations)
+					migrator := migrate.NewMigrator(nil, migrations)
 
 					name := strings.Join(c.Args().Slice(), "_")
 					files, err := migrator.CreateSQLMigrations(c.Context, name)
@@ -185,9 +181,7 @@ func mustOpenDB() *bun.DB {
 	storeDSN := os.Getenv("STORE_DSN")
 	stdDB := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(storeDSN)))
 	db := bun.NewDB(stdDB, pgdialect.New())
-	db.AddQueryHook(bundebug.NewQueryHook(
-		bundebug.WithVerbose(true),
-	))
+	db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
 
 	var err error
 

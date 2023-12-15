@@ -8,8 +8,6 @@ import (
 	"github.com/uptrace/bun"
 )
 
-const GuestUserID = 1
-
 type UsersStore struct {
 	db bun.IDB
 }

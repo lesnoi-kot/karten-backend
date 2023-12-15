@@ -11,9 +11,6 @@ import (
 	"github.com/uptrace/bun"
 )
 
-func init() {
-}
-
 type FilesInfoStore struct {
 	db          bun.IDB
 	fileStorage filestorage.FileStorage

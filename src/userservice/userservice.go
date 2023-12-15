@@ -242,7 +242,7 @@ func (user UserService) GetProjects(args *GetProjectsOptions) ([]*store.Project,
 		Relation("Avatar").
 		Relation("Avatar.Thumbnails")
 
-	if args.IncludeBoards {
+	if args != nil && args.IncludeBoards {
 		q = q.Relation("Boards").Relation("Boards.Cover")
 	}
 
