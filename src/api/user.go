@@ -11,6 +11,7 @@ import (
 	"github.com/lesnoi-kot/karten-backend/src/authservice/oauth"
 	"github.com/lesnoi-kot/karten-backend/src/settings"
 	"github.com/lesnoi-kot/karten-backend/src/store"
+	"github.com/lesnoi-kot/karten-backend/src/userservice"
 )
 
 var githubOAuthProvider oauth.GitHubProvider
@@ -100,7 +101,10 @@ func (api *APIService) guestLogIn(c echo.Context) error {
 		return err
 	}
 
-	user, err := api.store.Users.Get(context.Background(), store.GuestUserID)
+	user, err := api.mustGetUserService(c).GetUser(&userservice.GetUserOptions{
+		FullInfo:      true,
+		IncludeAvatar: true,
+	})
 	if err != nil {
 		return err
 	}

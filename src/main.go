@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/lesnoi-kot/karten-backend/src/api"
+	"github.com/lesnoi-kot/karten-backend/src/fileservice"
 	"github.com/lesnoi-kot/karten-backend/src/filestorage"
 	"github.com/lesnoi-kot/karten-backend/src/settings"
 	"github.com/lesnoi-kot/karten-backend/src/store"
@@ -31,19 +32,24 @@ func main() {
 	}
 
 	storeService := store.NewStore(store.StoreConfig{
-		DSN:         settings.AppConfig.StoreDSN,
-		FileStorage: fileStorage,
-		Logger:      logger,
-		Debug:       settings.AppConfig.Debug,
+		DSN:    settings.AppConfig.StoreDSN,
+		Logger: logger,
+		Debug:  settings.AppConfig.Debug,
 	})
 	if err = storeService.Ping(); err != nil {
 		logger.Fatalw("DB connection error", "error", err)
+	}
+
+	fileService := &fileservice.FileService{
+		Store:       storeService,
+		FileStorage: fileStorage,
 	}
 
 	apiService := api.NewAPI(api.APIConfig{
 		Store:        storeService,
 		Logger:       logger,
 		FileStorage:  fileStorage,
+		FileService:  fileService,
 		APIPrefix:    settings.AppConfig.APIPrefix,
 		CookieDomain: settings.AppConfig.CookieDomain,
 		AllowOrigins: settings.AppConfig.AllowOrigins,

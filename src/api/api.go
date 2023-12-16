@@ -12,6 +12,7 @@ import (
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/lesnoi-kot/karten-backend/src/fileservice"
 	"github.com/lesnoi-kot/karten-backend/src/filestorage"
 	"github.com/lesnoi-kot/karten-backend/src/settings"
 	"github.com/lesnoi-kot/karten-backend/src/store"
@@ -30,6 +31,7 @@ type APIService struct {
 	store       *store.Store
 	logger      *zap.SugaredLogger
 	fileStorage filestorage.FileStorage
+	fileService *fileservice.FileService
 	apiPrefix   string
 	frontendURL string
 	debug       bool
@@ -39,6 +41,7 @@ type APIConfig struct {
 	Store        *store.Store
 	Logger       *zap.SugaredLogger
 	FileStorage  filestorage.FileStorage
+	FileService  *fileservice.FileService
 	FrontendURL  string
 	APIPrefix    string
 	AllowOrigins []string
@@ -52,6 +55,7 @@ func NewAPI(cfg APIConfig) *APIService {
 		store:       cfg.Store,
 		logger:      cfg.Logger,
 		fileStorage: cfg.FileStorage,
+		fileService: cfg.FileService,
 		apiPrefix:   cfg.APIPrefix,
 		frontendURL: cfg.FrontendURL,
 		debug:       cfg.Debug,
@@ -241,9 +245,10 @@ func (api *APIService) getUserService(c echo.Context) (*userservice.UserService,
 	}
 
 	return &userservice.UserService{
-		Context: context.Background(),
-		UserID:  userID,
-		Store:   api.store,
+		Context:     context.Background(),
+		UserID:      userID,
+		Store:       api.store,
+		FileService: api.fileService,
 	}, nil
 }
 
@@ -254,8 +259,9 @@ func (api *APIService) mustGetUserService(c echo.Context) *userservice.UserServi
 	}
 
 	return &userservice.UserService{
-		Context: context.Background(),
-		UserID:  userID,
-		Store:   api.store,
+		Context:     context.Background(),
+		UserID:      userID,
+		Store:       api.store,
+		FileService: api.fileService,
 	}
 }

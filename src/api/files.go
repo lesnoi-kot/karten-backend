@@ -8,9 +8,9 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/lesnoi-kot/karten-backend/src/fileservice"
 	"github.com/lesnoi-kot/karten-backend/src/modules/images"
 	"github.com/lesnoi-kot/karten-backend/src/settings"
-	"github.com/lesnoi-kot/karten-backend/src/store"
 )
 
 type FileDTO struct {
@@ -27,7 +27,7 @@ type ImageFileDTO struct {
 }
 
 func (api *APIService) getCoverImages(c echo.Context) error {
-	files, err := api.store.Files.GetDefaultCovers(context.Background())
+	files, err := api.fileService.GetDefaultCovers(context.Background())
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (api *APIService) uploadImage(c echo.Context) error {
 			SetInternal(err)
 	}
 
-	dbFile, err := api.store.Files.AddImage(context.Background(), store.AddFileOptions{
+	dbFile, err := api.fileService.AddImage(context.Background(), fileservice.AddFileOptions{
 		Name:     fileHeader.Filename,
 		Data:     bytes.NewReader(data),
 		MIMEType: image.MIMEType,
@@ -83,8 +83,8 @@ func (api *APIService) uploadImage(c echo.Context) error {
 			return err
 		}
 
-		dbThumbnail, err := api.store.Files.AddImageThumbnail(context.Background(), store.AddImageThumbnailOptions{
-			AddFileOptions: store.AddFileOptions{
+		dbThumbnail, err := api.fileService.AddImageThumbnail(context.Background(), fileservice.AddImageThumbnailOptions{
+			AddFileOptions: fileservice.AddFileOptions{
 				Name:     fileHeader.Filename,
 				Data:     thumbnail,
 				MIMEType: "image/png",
@@ -119,7 +119,7 @@ func (api *APIService) uploadFile(c echo.Context) error {
 	}
 	defer file.Close()
 
-	dbFile, err := api.store.Files.Add(context.Background(), store.AddFileOptions{
+	dbFile, err := api.fileService.Add(context.Background(), fileservice.AddFileOptions{
 		Name:     fileHeader.Filename,
 		Data:     bytes.NewReader(data),
 		MIMEType: http.DetectContentType(data),
@@ -135,7 +135,7 @@ func (api *APIService) uploadFile(c echo.Context) error {
 
 func (api *APIService) deleteFile(c echo.Context) error {
 	fileID := c.Param("id")
-	err := api.store.Files.Delete(context.Background(), fileID)
+	err := api.fileService.Delete(context.Background(), fileID)
 	if err != nil {
 		return err
 	}

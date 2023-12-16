@@ -41,9 +41,7 @@ func (suite *baseAPITestSuite) init() {
 	suite.tasksMock = new(mockTasksStore)
 	suite.commentsMock = new(mockCommentsStore)
 
-	suite.store = &store.Store{
-		Entities: store.Entities{},
-	}
+	suite.store = &store.Store{}
 	suite.api = api.NewAPI(api.APIConfig{
 		Store:     suite.store,
 		Logger:    zap.NewNop().Sugar(),

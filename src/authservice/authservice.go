@@ -3,6 +3,7 @@ package authservice
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -10,13 +11,15 @@ import (
 	"strings"
 
 	"github.com/lesnoi-kot/karten-backend/src/authservice/oauth"
+	"github.com/lesnoi-kot/karten-backend/src/fileservice"
 	"github.com/lesnoi-kot/karten-backend/src/modules/images"
 	"github.com/lesnoi-kot/karten-backend/src/store"
 	"github.com/lesnoi-kot/karten-backend/src/userservice"
 )
 
 type AuthService struct {
-	Store *store.Store
+	Store       *store.Store
+	FileService *fileservice.FileService
 }
 
 func (service AuthService) generateSocialID(userInfo *oauth.UserInfo) string {
@@ -25,9 +28,9 @@ func (service AuthService) generateSocialID(userInfo *oauth.UserInfo) string {
 
 func (service AuthService) Authenticate(ctx context.Context, userInfo *oauth.UserInfo) (*store.User, error) {
 	db_social_id := service.generateSocialID(userInfo)
-	db_user, err := service.Store.Users.GetBySocialID(ctx, db_social_id)
+	db_user, err := service.GetUserBySocialID(ctx, db_social_id)
 
-	if errors.Is(err, store.ErrNotFound) {
+	if errors.Is(err, sql.ErrNoRows) {
 		// Register user if not found in the db.
 		db_user = &store.User{
 			SocialID: db_social_id,
@@ -41,7 +44,7 @@ func (service AuthService) Authenticate(ctx context.Context, userInfo *oauth.Use
 			db_user.AvatarID = avatarID
 		}
 
-		if err := service.Store.Users.Add(ctx, db_user); err != nil {
+		if err := service.RegisterUser(ctx, db_user); err != nil {
 			return nil, err
 		}
 
@@ -51,6 +54,33 @@ func (service AuthService) Authenticate(ctx context.Context, userInfo *oauth.Use
 	}
 
 	return db_user, nil
+}
+
+func (service AuthService) GetUserBySocialID(ctx context.Context, socialID string) (*store.User, error) {
+	user := new(store.User)
+
+	err := service.Store.ORM.
+		NewSelect().
+		Model(user).
+		Where("social_id = ?", socialID).
+		Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (service AuthService) RegisterUser(ctx context.Context, db_user *store.User) error {
+	_, err := service.Store.ORM.NewInsert().
+		Model(db_user).
+		Column("social_id", "avatar_id", "name", "login", "email", "url").
+		Returning("*").
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (service AuthService) onRegister(ctx context.Context, user *store.User) error {
@@ -139,7 +169,7 @@ func (service AuthService) copyAvatar(ctx context.Context, avatarURL string) (st
 	imgInfo, err := images.ParseImage(bytes.NewReader(body))
 	fileExtension := strings.TrimPrefix(imgInfo.MIMEType, "image/")
 
-	avatar, err := service.Store.Files.AddImage(ctx, store.AddFileOptions{
+	avatar, err := service.FileService.AddImage(ctx, fileservice.AddFileOptions{
 		Name:     fmt.Sprintf("avatar.%s", fileExtension),
 		MIMEType: imgInfo.MIMEType,
 		Data:     bytes.NewReader(body),

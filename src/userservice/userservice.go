@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/samber/lo"
 
+	"github.com/lesnoi-kot/karten-backend/src/fileservice"
 	"github.com/lesnoi-kot/karten-backend/src/modules/markdown"
 	"github.com/lesnoi-kot/karten-backend/src/store"
 	"github.com/uptrace/bun"
@@ -16,14 +18,19 @@ import (
 var ErrPermissionDenied error = errors.New("Permission denied")
 
 type UserService struct {
-	Context context.Context
-	UserID  store.UserID
-	Store   *store.Store
+	Context     context.Context
+	UserID      store.UserID
+	Store       *store.Store
+	FileService *fileservice.FileService
 }
 
 type GetUserOptions struct {
 	FullInfo      bool
 	IncludeAvatar bool
+}
+
+type EditUserOptions struct {
+	Name *string
 }
 
 type GetProjectsOptions struct {
@@ -229,8 +236,45 @@ func (userService *UserService) GetUser(args *GetUserOptions) (*store.User, erro
 	return user, nil
 }
 
+func (userService *UserService) EditUser(args *EditUserOptions) error {
+	if args == nil {
+		return nil
+	}
+
+	q := userService.Store.ORM.NewUpdate().
+		Model((*store.User)(nil)).
+		Where("id = ?", userService.UserID)
+
+	if args.Name != nil && strings.TrimSpace(*args.Name) != "" {
+		q = q.Set("name = ?", *args.Name)
+	}
+
+	result, err := q.Exec(userService.Context)
+	if err != nil {
+		return err
+	}
+
+	if store.NoRowsAffected(result) {
+		return store.ErrNotFound
+	}
+
+	return nil
+}
+
 func (user *UserService) Delete() error {
-	return user.Store.Users.Delete(user.Context, user.UserID)
+	result, err := user.Store.ORM.NewDelete().
+		Model((*store.User)(nil)).
+		Where("id = ?", user.UserID).
+		Exec(user.Context)
+	if err != nil {
+		return err
+	}
+
+	if store.NoRowsAffected(result) {
+		return store.ErrNotFound
+	}
+
+	return nil
 }
 
 func (user UserService) GetProjects(args *GetProjectsOptions) ([]*store.Project, error) {
@@ -284,7 +328,7 @@ func (user UserService) AddProject(args *AddProjectOptions) (*store.Project, err
 	}
 
 	if args.AvatarID != nil {
-		avatarFile, err := user.Store.Files.GetImage(user.Context, *args.AvatarID)
+		avatarFile, err := user.FileService.GetImage(user.Context, *args.AvatarID)
 		if err != nil {
 			return nil, err
 		}
@@ -446,7 +490,7 @@ func (user UserService) AddBoard(args *AddBoardOptions) (*store.Board, error) {
 	}
 
 	if args.CoverID != nil {
-		coverFile, _ := user.Store.Files.Get(user.Context, *args.CoverID)
+		coverFile, _ := user.FileService.Get(user.Context, *args.CoverID)
 
 		if coverFile.IsImage() {
 			board.CoverID = args.CoverID
