@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/lesnoi-kot/karten-backend/src/entityservices"
 	"github.com/lesnoi-kot/karten-backend/src/store"
-	"github.com/lesnoi-kot/karten-backend/src/userservice"
 )
 
 type TaskListDTO struct {
@@ -27,7 +27,7 @@ func (api *APIService) getTaskList(c echo.Context) error {
 	taskListID := c.Param("id")
 	userService := api.mustGetUserService(c)
 
-	taskList, err := userService.GetTaskList(&userservice.GetTaskListOptions{
+	taskList, err := userService.GetTaskList(&entityservices.GetTaskListOptions{
 		TaskListID:   taskListID,
 		IncludeTasks: true,
 	})
@@ -55,7 +55,7 @@ func (api *APIService) addTaskList(c echo.Context) error {
 
 	boardID := c.Param("id")
 	userService := api.mustGetUserService(c)
-	taskList, err := userService.AddTaskList(&userservice.AddTaskListOptions{
+	taskList, err := userService.AddTaskList(&entityservices.AddTaskListOptions{
 		BoardID:  boardID,
 		Name:     body.Name,
 		Color:    body.Color,
@@ -89,7 +89,7 @@ func (api *APIService) editTaskList(c echo.Context) error {
 	taskListID := c.Param("id")
 	userService := api.mustGetUserService(c)
 
-	err := userService.EditTaskList(&userservice.EditTaskListOptions{
+	err := userService.EditTaskList(&entityservices.EditTaskListOptions{
 		TaskListID: taskListID,
 		Name:       body.Name,
 		Archived:   body.Archived,
@@ -100,7 +100,7 @@ func (api *APIService) editTaskList(c echo.Context) error {
 		return err
 	}
 
-	taskList, err := userService.GetTaskList(&userservice.GetTaskListOptions{
+	taskList, err := userService.GetTaskList(&entityservices.GetTaskListOptions{
 		TaskListID:   taskListID,
 		IncludeTasks: false,
 	})
@@ -112,7 +112,7 @@ func (api *APIService) deleteTaskList(c echo.Context) error {
 	taskListID := c.Param("id")
 	userService := api.mustGetUserService(c)
 
-	err := userService.DeleteTaskList(&userservice.DeleteTaskListOptions{
+	err := userService.DeleteTaskList(&entityservices.DeleteTaskListOptions{
 		TaskListID: taskListID,
 	})
 	if err != nil {
@@ -126,7 +126,7 @@ func (api *APIService) clearTaskList(c echo.Context) error {
 	taskListID := c.Param("id")
 	userService := api.mustGetUserService(c)
 
-	err := userService.ClearTaskList(&userservice.ClearTaskListOptions{
+	err := userService.ClearTaskList(&entityservices.ClearTaskListOptions{
 		TaskListID: taskListID,
 	})
 	if err != nil {

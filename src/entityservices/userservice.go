@@ -1,4 +1,4 @@
-package userservice
+package entityservices
 
 import (
 	"context"
@@ -9,7 +9,6 @@ import (
 
 	"github.com/samber/lo"
 
-	"github.com/lesnoi-kot/karten-backend/src/fileservice"
 	"github.com/lesnoi-kot/karten-backend/src/modules/markdown"
 	"github.com/lesnoi-kot/karten-backend/src/store"
 	"github.com/uptrace/bun"
@@ -21,7 +20,7 @@ type UserService struct {
 	Context     context.Context
 	UserID      store.UserID
 	Store       *store.Store
-	FileService *fileservice.FileService
+	FileService *FileService
 }
 
 type GetUserOptions struct {

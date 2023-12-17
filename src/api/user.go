@@ -9,9 +9,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/lesnoi-kot/karten-backend/src/authservice"
 	"github.com/lesnoi-kot/karten-backend/src/authservice/oauth"
+	"github.com/lesnoi-kot/karten-backend/src/entityservices"
 	"github.com/lesnoi-kot/karten-backend/src/settings"
 	"github.com/lesnoi-kot/karten-backend/src/store"
-	"github.com/lesnoi-kot/karten-backend/src/userservice"
 )
 
 var githubOAuthProvider oauth.GitHubProvider
@@ -101,7 +101,7 @@ func (api *APIService) guestLogIn(c echo.Context) error {
 		return err
 	}
 
-	user, err := api.mustGetUserService(c).GetUser(&userservice.GetUserOptions{
+	user, err := api.mustGetUserService(c).GetUser(&entityservices.GetUserOptions{
 		FullInfo:      true,
 		IncludeAvatar: true,
 	})

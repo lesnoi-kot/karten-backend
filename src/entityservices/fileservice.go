@@ -1,4 +1,4 @@
-package fileservice
+package entityservices
 
 import (
 	"context"

@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
+	"github.com/lesnoi-kot/karten-backend/src/entityservices"
 	"github.com/lesnoi-kot/karten-backend/src/store"
-	"github.com/lesnoi-kot/karten-backend/src/userservice"
 )
 
 var requireId echo.MiddlewareFunc = requireParam("id")
@@ -94,7 +94,7 @@ func (service *APIService) makeInjectUserMiddleware() echo.MiddlewareFunc {
 				return echo.ErrUnauthorized
 			}
 
-			user, err := userService.GetUser(&userservice.GetUserOptions{
+			user, err := userService.GetUser(&entityservices.GetUserOptions{
 				FullInfo:      true,
 				IncludeAvatar: true,
 			})

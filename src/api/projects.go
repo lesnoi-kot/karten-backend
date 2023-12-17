@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/lesnoi-kot/karten-backend/src/entityservices"
 	"github.com/lesnoi-kot/karten-backend/src/store"
-	"github.com/lesnoi-kot/karten-backend/src/userservice"
 	"github.com/samber/lo"
 )
 
@@ -23,7 +23,7 @@ type ProjectDTO struct {
 func (api *APIService) getProjects(c echo.Context) error {
 	includes := c.QueryParams()["include"]
 	userService := api.mustGetUserService(c)
-	projects, err := userService.GetProjects(&userservice.GetProjectsOptions{
+	projects, err := userService.GetProjects(&entityservices.GetProjectsOptions{
 		IncludeBoards: lo.Contains(includes, "boards"),
 	})
 	if err != nil {
@@ -37,7 +37,7 @@ func (api *APIService) getProject(c echo.Context) error {
 	projectID := c.Param("id")
 	userService := api.mustGetUserService(c)
 
-	project, err := userService.GetProject(&userservice.GetProjectOptions{
+	project, err := userService.GetProject(&entityservices.GetProjectOptions{
 		ProjectID:     projectID,
 		IncludeBoards: true,
 	})
@@ -63,7 +63,7 @@ func (api *APIService) addProject(c echo.Context) error {
 	}
 
 	userService := api.mustGetUserService(c)
-	project, err := userService.AddProject(&userservice.AddProjectOptions{
+	project, err := userService.AddProject(&entityservices.AddProjectOptions{
 		Name:     body.Name,
 		AvatarID: body.AvatarID,
 	})
@@ -78,7 +78,7 @@ func (api *APIService) deleteProject(c echo.Context) error {
 	projectID := c.Param("id")
 	userService := api.mustGetUserService(c)
 
-	err := userService.DeleteProject(&userservice.DeleteProjectOptions{
+	err := userService.DeleteProject(&entityservices.DeleteProjectOptions{
 		ProjectID: projectID,
 	})
 	if err != nil {
@@ -120,7 +120,7 @@ func (api *APIService) editProject(c echo.Context) error {
 	projectID := c.Param("id")
 	userService := api.mustGetUserService(c)
 
-	err := userService.EditProject(&userservice.EditProjectOptions{
+	err := userService.EditProject(&entityservices.EditProjectOptions{
 		ProjectID: projectID,
 		Name:      body.Name,
 		AvatarID:  body.AvatarID,
@@ -129,7 +129,7 @@ func (api *APIService) editProject(c echo.Context) error {
 		return err
 	}
 
-	project, err := userService.GetProject(&userservice.GetProjectOptions{
+	project, err := userService.GetProject(&entityservices.GetProjectOptions{
 		ProjectID:     projectID,
 		IncludeBoards: false,
 	})

@@ -12,11 +12,10 @@ import (
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/lesnoi-kot/karten-backend/src/fileservice"
+	"github.com/lesnoi-kot/karten-backend/src/entityservices"
 	"github.com/lesnoi-kot/karten-backend/src/filestorage"
 	"github.com/lesnoi-kot/karten-backend/src/settings"
 	"github.com/lesnoi-kot/karten-backend/src/store"
-	"github.com/lesnoi-kot/karten-backend/src/userservice"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapio"
@@ -27,21 +26,22 @@ const (
 )
 
 type APIService struct {
-	handler     *echo.Echo
-	store       *store.Store
-	logger      *zap.SugaredLogger
-	fileStorage filestorage.FileStorage
-	fileService *fileservice.FileService
-	apiPrefix   string
-	frontendURL string
-	debug       bool
+	handler      *echo.Echo
+	store        *store.Store
+	logger       *zap.SugaredLogger
+	fileStorage  filestorage.FileStorage
+	fileService  *entityservices.FileService
+	SessionStore sessions.Store
+	apiPrefix    string
+	frontendURL  string
+	debug        bool
 }
 
 type APIConfig struct {
 	Store        *store.Store
 	Logger       *zap.SugaredLogger
 	FileStorage  filestorage.FileStorage
-	FileService  *fileservice.FileService
+	FileService  *entityservices.FileService
 	FrontendURL  string
 	APIPrefix    string
 	AllowOrigins []string
@@ -97,6 +97,7 @@ func NewAPI(cfg APIConfig) *APIService {
 		SameSite: http.SameSiteStrictMode,
 		Secure:   !cfg.Debug,
 	}
+	api.SessionStore = sessionStore
 
 	api.handler.Pre(middleware.RemoveTrailingSlash())
 	api.handler.Use(
@@ -238,30 +239,25 @@ func (a APIService) Prefix() string {
 	return a.apiPrefix
 }
 
-func (api *APIService) getUserService(c echo.Context) (*userservice.UserService, error) {
+func (api *APIService) getUserService(c echo.Context) (*entityservices.UserService, error) {
 	userID, err := getUserID(c)
 	if err != nil {
 		return nil, err
 	}
 
-	return &userservice.UserService{
-		Context:     context.Background(),
+	return &entityservices.UserService{
+		Context:     c.Request().Context(),
 		UserID:      userID,
 		Store:       api.store,
 		FileService: api.fileService,
 	}, nil
 }
 
-func (api *APIService) mustGetUserService(c echo.Context) *userservice.UserService {
-	userID, err := getUserID(c)
+func (api *APIService) mustGetUserService(c echo.Context) *entityservices.UserService {
+	userService, err := api.getUserService(c)
 	if err != nil {
 		panic(errors.New("mustGetUserService: unauthorized"))
 	}
 
-	return &userservice.UserService{
-		Context:     context.Background(),
-		UserID:      userID,
-		Store:       api.store,
-		FileService: api.fileService,
-	}
+	return userService
 }

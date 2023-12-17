@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/lesnoi-kot/karten-backend/src/entityservices"
 	"github.com/lesnoi-kot/karten-backend/src/store"
-	"github.com/lesnoi-kot/karten-backend/src/userservice"
 )
 
 type CommentDTO struct {
@@ -26,7 +26,7 @@ type CommentDTO struct {
 func (api *APIService) getComment(c echo.Context) error {
 	commentID := c.Param("id")
 	user := api.mustGetUserService(c)
-	comment, err := user.GetComment(&userservice.GetCommentOptions{
+	comment, err := user.GetComment(&entityservices.GetCommentOptions{
 		CommentID: commentID,
 	})
 	if err != nil {
@@ -53,7 +53,7 @@ func (api *APIService) addComment(c echo.Context) error {
 	taskID := c.Param("id")
 	user := api.mustGetUserService(c)
 
-	comment, err := user.AddComment(&userservice.AddCommentOptions{
+	comment, err := user.AddComment(&entityservices.AddCommentOptions{
 		TaskID: taskID,
 		Text:   body.Text,
 	})
@@ -61,7 +61,7 @@ func (api *APIService) addComment(c echo.Context) error {
 		return err
 	}
 
-	err = user.AttachFilesToComment(&userservice.AttachFilesToComment{
+	err = user.AttachFilesToComment(&entityservices.AttachFilesToComment{
 		CommentID: comment.ID,
 		FilesID:   body.Attachments,
 	})
@@ -90,7 +90,7 @@ func (api *APIService) editComment(c echo.Context) error {
 	commentID := c.Param("id")
 	user := api.mustGetUserService(c)
 
-	err := user.EditComment(&userservice.EditCommentOptions{
+	err := user.EditComment(&entityservices.EditCommentOptions{
 		CommentID: commentID,
 		Text:      body.Text,
 	})
@@ -98,7 +98,7 @@ func (api *APIService) editComment(c echo.Context) error {
 		return err
 	}
 
-	comment, err := user.GetComment(&userservice.GetCommentOptions{CommentID: commentID})
+	comment, err := user.GetComment(&entityservices.GetCommentOptions{CommentID: commentID})
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func (api *APIService) deleteComment(c echo.Context) error {
 	commentID := c.Param("id")
 	user := api.mustGetUserService(c)
 
-	err := user.DeleteComment(&userservice.DeleteCommentOptions{CommentID: commentID})
+	err := user.DeleteComment(&entityservices.DeleteCommentOptions{CommentID: commentID})
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (api *APIService) addCommentAttachments(c echo.Context) error {
 	commentID := c.Param("id")
 	user := api.mustGetUserService(c)
 
-	err := user.AttachFilesToComment(&userservice.AttachFilesToComment{
+	err := user.AttachFilesToComment(&entityservices.AttachFilesToComment{
 		CommentID: commentID,
 		FilesID:   body.FilesID,
 	})

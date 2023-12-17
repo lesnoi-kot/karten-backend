@@ -1,34 +1,49 @@
 SHELL=/bin/sh
 
-.PHONY: start-dev
-start-dev:
-	docker compose -f docker-compose.dev.yml up
+###
+prepare:
+	go mod tidy
+	cp .env.example .env
 
-.PHONY: build-migrator-image
-build-migrator-image:
-	docker build -t karten-backend-migrator:latest --target=migrator .
+###
+run:
+	docker compose up
 
-.PHONY: rm-dev-db
+###
+run-local:
+	USE_DOTENV=true go run ./src/cmd/karten/main.go
+
+run-services:
+	docker compose up db migrator static-server
+
+###
+test:
+	go test ./...
+
+test-integration:
+	INTEGRATION_TESTS=1 go test -run ^TestIntegration ./...
+
+docker-test-db:
+	docker compose -f docker-compose.test.yml up --abort-on-container-exit
+
+###
 rm-dev-db:
-	docker compose -f docker-compose.dev.yml rm -sv db
+	docker compose rm -sv db
 	docker volume rm karten-backend_pg_data
 
-.PHONY: start-test-db
-start-test-db:
-	docker compose -f docker-compose.test.yml up -d karten-test-db
+rm-test-db:
+	docker compose -f docker-compose.test.yml rm -sv karten-test-db
 
-.PHONY: stop-test-db
-stop-test-db:
-	docker compose -f docker-compose.test.yml down -v --remove-orphans
+###
+new-migration:
+	go run src/cmd/migrator/main.go db create_sql unnamed_migration
 
-.PHONY: test-db
-test-db:
-	STORE_DSN="postgres://tester:tester@127.0.0.1:5432/test?sslmode=disable&search_path=karten" \
-		go test "github.com/lesnoi-kot/karten-backend/src/store"
+migrate:
+	go run src/cmd/migrator/main.go db migrate
 
-.PHONY: docker-test-db
-docker-test-db:
-	docker compose -f docker-compose.test.yml up   \
-		--abort-on-container-exit --force-recreate \
-		--exit-code-from karten-intergation-tests || true
-	docker compose -f docker-compose.test.yml down -v
+rollback:
+	go run src/cmd/migrator/main.go db rollback
+
+###
+build-migrator-image:
+	docker build -t karten-backend-migrator:local --target=migrator .

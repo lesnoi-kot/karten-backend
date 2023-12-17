@@ -1,22 +1,29 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 
 	"github.com/caarlos0/env/v6"
+	"github.com/joho/godotenv"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/lesnoi-kot/karten-backend/src/api"
-	"github.com/lesnoi-kot/karten-backend/src/fileservice"
+	"github.com/lesnoi-kot/karten-backend/src/entityservices"
 	"github.com/lesnoi-kot/karten-backend/src/filestorage"
 	"github.com/lesnoi-kot/karten-backend/src/settings"
 	"github.com/lesnoi-kot/karten-backend/src/store"
 )
 
 func main() {
+	if os.Getenv("USE_DOTENV") == "true" {
+		godotenv.Load()
+	}
+
 	logger := prepareLogger(os.Getenv("DEBUG") == "true")
 	defer logger.Sync()
 
@@ -40,7 +47,15 @@ func main() {
 		logger.Fatalw("DB connection error", "error", err)
 	}
 
-	fileService := &fileservice.FileService{
+	defer func() {
+		if err := storeService.Close(); err != nil {
+			logger.Errorw("Store connection close error", "error", err)
+		} else {
+			logger.Info("Store connection is closed")
+		}
+	}()
+
+	fileService := &entityservices.FileService{
 		Store:       storeService,
 		FileStorage: fileStorage,
 	}
@@ -61,13 +76,7 @@ func main() {
 	if err := apiService.Start(settings.AppConfig.APIBindAddress); err != nil {
 		logger.Info("API service is stopped")
 
-		if err := storeService.Close(); err != nil {
-			logger.Errorw("Store connection close error", "error", err)
-		} else {
-			logger.Info("Store connection is closed")
-		}
-
-		if err != http.ErrServerClosed {
+		if errors.Is(err, http.ErrServerClosed) == false {
 			logger.Errorw("Server stopped with an error", "error", err)
 		}
 	}
@@ -77,7 +86,9 @@ func prepareLogger(debug bool) *zap.SugaredLogger {
 	var logger *zap.Logger
 
 	if debug {
-		logger = zap.Must(zap.NewDevelopment())
+		cfg := zap.NewDevelopmentConfig()
+		cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+		logger = zap.Must(cfg.Build())
 	} else {
 		logger = zap.Must(zap.NewProduction())
 	}

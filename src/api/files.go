@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/lesnoi-kot/karten-backend/src/fileservice"
+	"github.com/lesnoi-kot/karten-backend/src/entityservices"
 	"github.com/lesnoi-kot/karten-backend/src/modules/images"
 	"github.com/lesnoi-kot/karten-backend/src/settings"
 )
@@ -66,7 +66,7 @@ func (api *APIService) uploadImage(c echo.Context) error {
 			SetInternal(err)
 	}
 
-	dbFile, err := api.fileService.AddImage(context.Background(), fileservice.AddFileOptions{
+	dbFile, err := api.fileService.AddImage(context.Background(), entityservices.AddFileOptions{
 		Name:     fileHeader.Filename,
 		Data:     bytes.NewReader(data),
 		MIMEType: image.MIMEType,
@@ -83,8 +83,8 @@ func (api *APIService) uploadImage(c echo.Context) error {
 			return err
 		}
 
-		dbThumbnail, err := api.fileService.AddImageThumbnail(context.Background(), fileservice.AddImageThumbnailOptions{
-			AddFileOptions: fileservice.AddFileOptions{
+		dbThumbnail, err := api.fileService.AddImageThumbnail(context.Background(), entityservices.AddImageThumbnailOptions{
+			AddFileOptions: entityservices.AddFileOptions{
 				Name:     fileHeader.Filename,
 				Data:     thumbnail,
 				MIMEType: "image/png",
@@ -119,7 +119,7 @@ func (api *APIService) uploadFile(c echo.Context) error {
 	}
 	defer file.Close()
 
-	dbFile, err := api.fileService.Add(context.Background(), fileservice.AddFileOptions{
+	dbFile, err := api.fileService.Add(context.Background(), entityservices.AddFileOptions{
 		Name:     fileHeader.Filename,
 		Data:     bytes.NewReader(data),
 		MIMEType: http.DetectContentType(data),

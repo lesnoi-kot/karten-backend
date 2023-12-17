@@ -4,7 +4,7 @@ services:
     environment:
       DEBUG: true
       API_HOST: "0.0.0.0:4000"
-      STORE_DSN: "postgres://karten:karten@db:5432/karten?sslmode=disable&search_path=karten"
+      STORE_DSN: "postgres://karten:karten@db:5432/karten?sslmode=disable"
       FILE_STORAGE_PATH: "/app/media"
       SESSIONS_STORE_PATH: "/tmp"
 
@@ -28,7 +28,7 @@ services:
     depends_on:
       - db
     environment:
-      STORE_DSN: "postgres://karten:karten@db:5432/karten?sslmode=disable&search_path=karten"
+      STORE_DSN: "postgres://karten:karten@db:5432/karten?sslmode=disable"
     command: [ "db", "migrate" ]
 
   db:
