@@ -25,8 +25,12 @@ type IFileService interface {
 	Delete(ctx context.Context, fileID store.FileID) error
 }
 
+type FileServiceRequirements interface {
+	StoreInjector
+}
+
 type FileService struct {
-	Store       *store.Store
+	FileServiceRequirements
 	FileStorage filestorage.FileStorage
 }
 
@@ -56,7 +60,7 @@ func (s FileService) Add(ctx context.Context, opts AddFileOptions) (*store.File,
 		Size:            int(bytesCount),
 	}
 
-	_, err = s.Store.ORM.NewInsert().
+	_, err = s.GetStore().ORM.NewInsert().
 		Model(file).
 		Column("storage_object_id", "name", "size", "mime_type").
 		Returning("id").
@@ -76,17 +80,17 @@ func (s FileService) AddImageThumbnail(ctx context.Context, opts AddImageThumbna
 		ImageID: opts.OriginalImageFileID,
 	}
 
-	_, err = s.Store.ORM.NewInsert().Model(link).Exec(ctx)
+	_, err = s.GetStore().ORM.NewInsert().Model(link).Exec(ctx)
 	return thumbnail, err
 }
 
 func (s FileService) GetDefaultCovers(ctx context.Context) ([]store.ImageFile, error) {
 	var covers []store.ImageFile
-	subquery := s.Store.ORM.NewSelect().
+	subquery := s.GetStore().ORM.NewSelect().
 		Model((*store.CoverImageToFileAssoc)(nil)).
 		Limit(DefaultCoverLimit)
 
-	err := s.Store.ORM.NewSelect().
+	err := s.GetStore().ORM.NewSelect().
 		Model(&covers).
 		Relation("Thumbnails").
 		Where("id in (?)", subquery).
@@ -96,7 +100,7 @@ func (s FileService) GetDefaultCovers(ctx context.Context) ([]store.ImageFile, e
 }
 
 func (s FileService) IsDefaultCover(ctx context.Context, fileID store.FileID) bool {
-	exists, err := s.Store.ORM.NewSelect().
+	exists, err := s.GetStore().ORM.NewSelect().
 		Model((*store.CoverImageToFileAssoc)(nil)).
 		Where("id = ?", fileID).
 		Exists(ctx)
@@ -108,7 +112,7 @@ func (s FileService) IsDefaultCover(ctx context.Context, fileID store.FileID) bo
 }
 
 func (s FileService) IsImage(ctx context.Context, fileID store.FileID) bool {
-	exists, err := s.Store.ORM.NewSelect().
+	exists, err := s.GetStore().ORM.NewSelect().
 		Model((*store.File)(nil)).
 		Where("id = ?", fileID).
 		Where("mime_type LIKE ?", "image/%").
@@ -122,7 +126,7 @@ func (s FileService) IsImage(ctx context.Context, fileID store.FileID) bool {
 
 func (s FileService) Get(ctx context.Context, fileID store.FileID) (*store.File, error) {
 	file := new(store.File)
-	err := s.Store.ORM.NewSelect().
+	err := s.GetStore().ORM.NewSelect().
 		Model(file).
 		Where("id = ?", fileID).
 		Scan(ctx)
@@ -132,7 +136,7 @@ func (s FileService) Get(ctx context.Context, fileID store.FileID) (*store.File,
 
 func (s FileService) GetImage(ctx context.Context, fileID store.FileID) (*store.ImageFile, error) {
 	img := new(store.ImageFile)
-	err := s.Store.ORM.NewSelect().
+	err := s.GetStore().ORM.NewSelect().
 		Model(img).
 		Relation("Thumbnails").
 		Where("id = ?", fileID).
@@ -164,7 +168,7 @@ func (s FileService) AddImage(ctx context.Context, opts AddFileOptions) (*store.
 }
 
 func (s FileService) Delete(ctx context.Context, fileID store.FileID) error {
-	result, err := s.Store.ORM.NewDelete().
+	result, err := s.GetStore().ORM.NewDelete().
 		Model((*store.File)(nil)).
 		Where("id = ?", fileID).
 		Exec(ctx)

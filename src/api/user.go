@@ -61,7 +61,11 @@ func (api *APIService) oauthCallback(c echo.Context) error {
 		return fmt.Errorf("GetUser error: %w", err)
 	}
 
-	authService := authservice.AuthService{Store: api.store}
+	authService := authservice.AuthService{
+		ContextsContainer: api.ContextsContainer,
+		Store:             api.store,
+		FileService:       api.fileService,
+	}
 	db_user, err := authService.Authenticate(context.Background(), userInfo)
 	if err != nil {
 		return err
@@ -101,7 +105,7 @@ func (api *APIService) guestLogIn(c echo.Context) error {
 		return err
 	}
 
-	user, err := api.mustGetUserService(c).GetUser(&entityservices.GetUserOptions{
+	user, err := api.mustGetUserService(c).UserService.GetUser(&entityservices.GetUserOptions{
 		FullInfo:      true,
 		IncludeAvatar: true,
 	})
@@ -119,7 +123,7 @@ func (api *APIService) deleteUser(c echo.Context) error {
 		return echo.ErrForbidden
 	}
 
-	if err := user.Delete(); err != nil {
+	if err := user.UserService.DeleteUser(); err != nil {
 		return err
 	}
 

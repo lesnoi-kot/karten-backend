@@ -23,7 +23,7 @@ type ProjectDTO struct {
 func (api *APIService) getProjects(c echo.Context) error {
 	includes := c.QueryParams()["include"]
 	userService := api.mustGetUserService(c)
-	projects, err := userService.GetProjects(&entityservices.GetProjectsOptions{
+	projects, err := userService.ProjectService.GetProjects(&entityservices.GetProjectsOptions{
 		IncludeBoards: lo.Contains(includes, "boards"),
 	})
 	if err != nil {
@@ -37,7 +37,7 @@ func (api *APIService) getProject(c echo.Context) error {
 	projectID := c.Param("id")
 	userService := api.mustGetUserService(c)
 
-	project, err := userService.GetProject(&entityservices.GetProjectOptions{
+	project, err := userService.ProjectService.GetProject(&entityservices.GetProjectOptions{
 		ProjectID:     projectID,
 		IncludeBoards: true,
 	})
@@ -63,7 +63,7 @@ func (api *APIService) addProject(c echo.Context) error {
 	}
 
 	userService := api.mustGetUserService(c)
-	project, err := userService.AddProject(&entityservices.AddProjectOptions{
+	project, err := userService.ProjectService.AddProject(&entityservices.AddProjectOptions{
 		Name:     body.Name,
 		AvatarID: body.AvatarID,
 	})
@@ -78,7 +78,7 @@ func (api *APIService) deleteProject(c echo.Context) error {
 	projectID := c.Param("id")
 	userService := api.mustGetUserService(c)
 
-	err := userService.DeleteProject(&entityservices.DeleteProjectOptions{
+	err := userService.ProjectService.DeleteProject(&entityservices.DeleteProjectOptions{
 		ProjectID: projectID,
 	})
 	if err != nil {
@@ -89,7 +89,7 @@ func (api *APIService) deleteProject(c echo.Context) error {
 }
 
 func (api *APIService) deleteProjects(c echo.Context) error {
-	if err := api.mustGetUserService(c).DeleteAllProjects(); err != nil {
+	if err := api.mustGetUserService(c).UserService.DeleteAllProjects(); err != nil {
 		return err
 	}
 
@@ -98,7 +98,7 @@ func (api *APIService) deleteProjects(c echo.Context) error {
 
 func (api *APIService) clearProject(c echo.Context) error {
 	projectID := c.Param("id")
-	if err := api.mustGetUserService(c).ClearProject(projectID); err != nil {
+	if err := api.mustGetUserService(c).ProjectService.ClearProject(projectID); err != nil {
 		return err
 	}
 
@@ -120,7 +120,7 @@ func (api *APIService) editProject(c echo.Context) error {
 	projectID := c.Param("id")
 	userService := api.mustGetUserService(c)
 
-	err := userService.EditProject(&entityservices.EditProjectOptions{
+	err := userService.ProjectService.EditProject(&entityservices.EditProjectOptions{
 		ProjectID: projectID,
 		Name:      body.Name,
 		AvatarID:  body.AvatarID,
@@ -129,7 +129,7 @@ func (api *APIService) editProject(c echo.Context) error {
 		return err
 	}
 
-	project, err := userService.GetProject(&entityservices.GetProjectOptions{
+	project, err := userService.ProjectService.GetProject(&entityservices.GetProjectOptions{
 		ProjectID:     projectID,
 		IncludeBoards: false,
 	})

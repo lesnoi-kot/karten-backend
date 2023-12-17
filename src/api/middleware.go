@@ -94,7 +94,7 @@ func (service *APIService) makeInjectUserMiddleware() echo.MiddlewareFunc {
 				return echo.ErrUnauthorized
 			}
 
-			user, err := userService.GetUser(&entityservices.GetUserOptions{
+			user, err := userService.UserService.GetUser(&entityservices.GetUserOptions{
 				FullInfo:      true,
 				IncludeAvatar: true,
 			})

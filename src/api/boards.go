@@ -33,7 +33,7 @@ func (api *APIService) getBoard(c echo.Context) error {
 	boardID := c.Param("id")
 	mode := c.QueryParam("mode")
 	userService := api.mustGetUserService(c)
-	board, err := userService.GetBoard(&entityservices.GetBoardOptions{
+	board, err := userService.BoardService.GetBoard(&entityservices.GetBoardOptions{
 		BoardID:          boardID,
 		IncludeTaskLists: mode != "shallow",
 		IncludeTasks:     mode != "shallow",
@@ -63,7 +63,7 @@ func (api *APIService) addBoard(c echo.Context) error {
 
 	projectID := c.Param("id")
 	userService := api.mustGetUserService(c)
-	board, err := userService.AddBoard(&entityservices.AddBoardOptions{
+	board, err := userService.BoardService.AddBoard(&entityservices.AddBoardOptions{
 		ProjectID: projectID,
 		Name:      body.Name,
 		Color:     body.Color,
@@ -96,7 +96,7 @@ func (api *APIService) editBoard(c echo.Context) error {
 
 	userService := api.mustGetUserService(c)
 	boardID := c.Param("id")
-	err := userService.EditBoard(&entityservices.EditBoardOptions{
+	err := userService.BoardService.EditBoard(&entityservices.EditBoardOptions{
 		BoardID:  boardID,
 		Name:     body.Name,
 		Archived: body.Archived,
@@ -107,7 +107,7 @@ func (api *APIService) editBoard(c echo.Context) error {
 		return err
 	}
 
-	board, err := userService.GetBoard(&entityservices.GetBoardOptions{
+	board, err := userService.BoardService.GetBoard(&entityservices.GetBoardOptions{
 		BoardID:                  boardID,
 		SkipDateLastViewedUpdate: true,
 	})
@@ -122,7 +122,7 @@ func (api *APIService) deleteBoard(c echo.Context) error {
 	boardID := c.Param("id")
 	userService := api.mustGetUserService(c)
 
-	err := userService.DeleteBoard(&entityservices.DeleteBoardOptions{BoardID: boardID})
+	err := userService.BoardService.DeleteBoard(&entityservices.DeleteBoardOptions{BoardID: boardID})
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func (api *APIService) setFavoriteBoard(c echo.Context, favorite bool) error {
 	boardID := c.Param("id")
 	userService := api.mustGetUserService(c)
 
-	err := userService.EditBoard(&entityservices.EditBoardOptions{
+	err := userService.BoardService.EditBoard(&entityservices.EditBoardOptions{
 		BoardID:  boardID,
 		Favorite: &favorite,
 	})
@@ -169,7 +169,7 @@ func (api *APIService) addLabel(c echo.Context) error {
 
 	boardID := c.Param("id")
 	userService := api.mustGetUserService(c)
-	label, err := userService.AddLabel(&entityservices.AddLabelOptions{
+	label, err := userService.BoardService.AddLabel(&entityservices.AddLabelOptions{
 		BoardID: boardID,
 		Name:    body.Name,
 		Color:   body.Color,
@@ -188,7 +188,7 @@ func (api *APIService) deleteLabel(c echo.Context) error {
 	}
 
 	userService := api.mustGetUserService(c)
-	err = userService.DeleteLabel(&entityservices.DeleteLabelOptions{
+	err = userService.BoardService.DeleteLabel(&entityservices.DeleteLabelOptions{
 		LabelID: labelID,
 	})
 	if err != nil {
@@ -220,7 +220,7 @@ func (api *APIService) editLabel(c echo.Context) error {
 	}
 
 	userService := api.mustGetUserService(c)
-	err = userService.EditLabel(&entityservices.EditLabelOptions{
+	err = userService.BoardService.EditLabel(&entityservices.EditLabelOptions{
 		LabelID: labelID,
 		Name:    body.Name,
 		Color:   body.Color,
@@ -229,7 +229,7 @@ func (api *APIService) editLabel(c echo.Context) error {
 		return err
 	}
 
-	label, err := userService.GetLabel(labelID)
+	label, err := userService.BoardService.GetLabel(labelID)
 	if err != nil {
 		return err
 	}

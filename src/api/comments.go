@@ -26,7 +26,7 @@ type CommentDTO struct {
 func (api *APIService) getComment(c echo.Context) error {
 	commentID := c.Param("id")
 	user := api.mustGetUserService(c)
-	comment, err := user.GetComment(&entityservices.GetCommentOptions{
+	comment, err := user.CommentService.GetComment(&entityservices.GetCommentOptions{
 		CommentID: commentID,
 	})
 	if err != nil {
@@ -53,7 +53,7 @@ func (api *APIService) addComment(c echo.Context) error {
 	taskID := c.Param("id")
 	user := api.mustGetUserService(c)
 
-	comment, err := user.AddComment(&entityservices.AddCommentOptions{
+	comment, err := user.CommentService.AddComment(&entityservices.AddCommentOptions{
 		TaskID: taskID,
 		Text:   body.Text,
 	})
@@ -61,7 +61,7 @@ func (api *APIService) addComment(c echo.Context) error {
 		return err
 	}
 
-	err = user.AttachFilesToComment(&entityservices.AttachFilesToComment{
+	err = user.CommentService.AttachFilesToComment(&entityservices.AttachFilesToComment{
 		CommentID: comment.ID,
 		FilesID:   body.Attachments,
 	})
@@ -90,7 +90,7 @@ func (api *APIService) editComment(c echo.Context) error {
 	commentID := c.Param("id")
 	user := api.mustGetUserService(c)
 
-	err := user.EditComment(&entityservices.EditCommentOptions{
+	err := user.CommentService.EditComment(&entityservices.EditCommentOptions{
 		CommentID: commentID,
 		Text:      body.Text,
 	})
@@ -98,7 +98,7 @@ func (api *APIService) editComment(c echo.Context) error {
 		return err
 	}
 
-	comment, err := user.GetComment(&entityservices.GetCommentOptions{CommentID: commentID})
+	comment, err := user.CommentService.GetComment(&entityservices.GetCommentOptions{CommentID: commentID})
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func (api *APIService) deleteComment(c echo.Context) error {
 	commentID := c.Param("id")
 	user := api.mustGetUserService(c)
 
-	err := user.DeleteComment(&entityservices.DeleteCommentOptions{CommentID: commentID})
+	err := user.CommentService.DeleteComment(&entityservices.DeleteCommentOptions{CommentID: commentID})
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (api *APIService) addCommentAttachments(c echo.Context) error {
 	commentID := c.Param("id")
 	user := api.mustGetUserService(c)
 
-	err := user.AttachFilesToComment(&entityservices.AttachFilesToComment{
+	err := user.CommentService.AttachFilesToComment(&entityservices.AttachFilesToComment{
 		CommentID: commentID,
 		FilesID:   body.FilesID,
 	})

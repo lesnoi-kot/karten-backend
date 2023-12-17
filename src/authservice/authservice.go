@@ -6,7 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
@@ -17,8 +17,9 @@ import (
 )
 
 type AuthService struct {
-	Store       *store.Store
-	FileService *entityservices.FileService
+	ContextsContainer entityservices.IContextsContainer
+	Store             *store.Store
+	FileService       entityservices.IFileService
 }
 
 func (service AuthService) generateSocialID(userInfo *oauth.UserInfo) string {
@@ -83,20 +84,18 @@ func (service AuthService) RegisterUser(ctx context.Context, db_user *store.User
 }
 
 func (service AuthService) onRegister(ctx context.Context, user *store.User) error {
-	userService := entityservices.UserService{
-		Context: ctx,
-		UserID:  user.ID,
-		Store:   service.Store,
-	}
+	userContext := service.ContextsContainer.GetAuthorizedUserContext(entityservices.GetAuthorizedUserContextOptions{
+		UserID: user.ID,
+	})
 
-	project, err := userService.AddProject(&entityservices.AddProjectOptions{
+	project, err := userContext.ProjectService.AddProject(&entityservices.AddProjectOptions{
 		Name: user.Name,
 	})
 	if err != nil {
 		return err
 	}
 
-	board, err := userService.AddBoard(&entityservices.AddBoardOptions{
+	board, err := userContext.BoardService.AddBoard(&entityservices.AddBoardOptions{
 		ProjectID: project.ID,
 		Name:      "Tutorial board",
 		Color:     0x0094ae,
@@ -106,7 +105,7 @@ func (service AuthService) onRegister(ctx context.Context, user *store.User) err
 	}
 
 	{
-		list, err := userService.AddTaskList(&entityservices.AddTaskListOptions{
+		list, err := userContext.TaskListService.AddTaskList(&entityservices.AddTaskListOptions{
 			BoardID:  board.ID,
 			Name:     "Stuff to try (this is a list)",
 			Position: 0,
@@ -115,7 +114,7 @@ func (service AuthService) onRegister(ctx context.Context, user *store.User) err
 			return err
 		}
 
-		_, err = userService.AddTask(&entityservices.AddTaskOptions{
+		_, err = userContext.TaskService.AddTask(&entityservices.AddTaskOptions{
 			TaskListID: list.ID,
 			Name:       "This is a card. Drag it to the \"Tried It\" List to show it's done. →",
 			Position:   0,
@@ -126,7 +125,7 @@ func (service AuthService) onRegister(ctx context.Context, user *store.User) err
 	}
 
 	{
-		list, err := userService.AddTaskList(&entityservices.AddTaskListOptions{
+		list, err := userContext.TaskListService.AddTaskList(&entityservices.AddTaskListOptions{
 			BoardID:  board.ID,
 			Name:     "Tried it",
 			Position: 10000,
@@ -135,7 +134,7 @@ func (service AuthService) onRegister(ctx context.Context, user *store.User) err
 			return err
 		}
 
-		_, err = userService.AddTask(&entityservices.AddTaskOptions{
+		_, err = userContext.TaskService.AddTask(&entityservices.AddTaskOptions{
 			TaskListID: list.ID,
 			Name:       "Lets go",
 			Position:   0,
@@ -160,7 +159,7 @@ func (service AuthService) copyAvatar(ctx context.Context, avatarURL string) (st
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}

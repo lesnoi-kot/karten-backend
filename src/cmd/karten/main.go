@@ -49,22 +49,20 @@ func main() {
 
 	defer func() {
 		if err := storeService.Close(); err != nil {
-			logger.Errorw("Store connection close error", "error", err)
+			logger.Errorw("DB connection close error", "error", err)
 		} else {
-			logger.Info("Store connection is closed")
+			logger.Info("DB connection is closed")
 		}
 	}()
 
-	fileService := &entityservices.FileService{
-		Store:       storeService,
-		FileStorage: fileStorage,
-	}
-
 	apiService := api.NewAPI(api.APIConfig{
-		Store:        storeService,
-		Logger:       logger,
-		FileStorage:  fileStorage,
-		FileService:  fileService,
+		Store:       storeService,
+		Logger:      logger,
+		FileStorage: fileStorage,
+		ContextsContainer: entityservices.ContextsContainer{
+			Store:       storeService,
+			FileStorage: fileStorage,
+		},
 		APIPrefix:    settings.AppConfig.APIPrefix,
 		CookieDomain: settings.AppConfig.CookieDomain,
 		AllowOrigins: settings.AppConfig.AllowOrigins,

@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"net/url"
 	"strings"
@@ -26,39 +25,47 @@ const (
 )
 
 type APIService struct {
-	handler      *echo.Echo
-	store        *store.Store
-	logger       *zap.SugaredLogger
-	fileStorage  filestorage.FileStorage
-	fileService  *entityservices.FileService
-	SessionStore sessions.Store
-	apiPrefix    string
-	frontendURL  string
-	debug        bool
+	handler           *echo.Echo
+	store             *store.Store
+	logger            *zap.SugaredLogger
+	fileStorage       filestorage.FileStorage
+	ContextsContainer entityservices.IContextsContainer
+	fileService       entityservices.IFileService
+	guestContext      *entityservices.AuthorizedUserContext
+	SessionStore      sessions.Store
+	apiPrefix         string
+	frontendURL       string
+	debug             bool
 }
 
 type APIConfig struct {
-	Store        *store.Store
-	Logger       *zap.SugaredLogger
-	FileStorage  filestorage.FileStorage
-	FileService  *entityservices.FileService
-	FrontendURL  string
-	APIPrefix    string
-	AllowOrigins []string
-	CookieDomain string
-	Debug        bool
+	Store             *store.Store
+	Logger            *zap.SugaredLogger
+	FileStorage       filestorage.FileStorage
+	ContextsContainer entityservices.IContextsContainer
+	FrontendURL       string
+	APIPrefix         string
+	AllowOrigins      []string
+	CookieDomain      string
+	Debug             bool
 }
 
 func NewAPI(cfg APIConfig) *APIService {
+	guestContext := cfg.ContextsContainer.GetAuthorizedUserContext(entityservices.GetAuthorizedUserContextOptions{
+		UserID: store.GuestUserID,
+	})
+
 	api := &APIService{
-		handler:     echo.New(),
-		store:       cfg.Store,
-		logger:      cfg.Logger,
-		fileStorage: cfg.FileStorage,
-		fileService: cfg.FileService,
-		apiPrefix:   cfg.APIPrefix,
-		frontendURL: cfg.FrontendURL,
-		debug:       cfg.Debug,
+		handler:           echo.New(),
+		store:             cfg.Store,
+		logger:            cfg.Logger,
+		fileStorage:       cfg.FileStorage,
+		guestContext:      guestContext,
+		fileService:       guestContext.FileService,
+		ContextsContainer: cfg.ContextsContainer,
+		apiPrefix:         cfg.APIPrefix,
+		frontendURL:       cfg.FrontendURL,
+		debug:             cfg.Debug,
 	}
 
 	api.handler.Debug = cfg.Debug
@@ -239,24 +246,21 @@ func (a APIService) Prefix() string {
 	return a.apiPrefix
 }
 
-func (api *APIService) getUserService(c echo.Context) (*entityservices.UserService, error) {
+func (api *APIService) getUserService(c echo.Context) (*entityservices.AuthorizedUserContext, error) {
 	userID, err := getUserID(c)
 	if err != nil {
 		return nil, err
 	}
 
-	return &entityservices.UserService{
-		Context:     c.Request().Context(),
-		UserID:      userID,
-		Store:       api.store,
-		FileService: api.fileService,
-	}, nil
+	return api.ContextsContainer.GetAuthorizedUserContext(entityservices.GetAuthorizedUserContextOptions{
+		UserID: userID,
+	}), nil
 }
 
-func (api *APIService) mustGetUserService(c echo.Context) *entityservices.UserService {
+func (api *APIService) mustGetUserService(c echo.Context) *entityservices.AuthorizedUserContext {
 	userService, err := api.getUserService(c)
 	if err != nil {
-		panic(errors.New("mustGetUserService: unauthorized"))
+		panic(echo.ErrUnauthorized)
 	}
 
 	return userService

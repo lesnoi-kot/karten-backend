@@ -42,7 +42,7 @@ type TaskDTO struct {
 func (api *APIService) getTask(c echo.Context) error {
 	taskID := c.Param("id")
 	user := api.mustGetUserService(c)
-	task, err := user.GetTask(&entityservices.GetTaskOptions{
+	task, err := user.TaskService.GetTask(&entityservices.GetTaskOptions{
 		TaskID:             taskID,
 		IncludeComments:    true,
 		IncludeLabels:      true,
@@ -74,7 +74,7 @@ func (api *APIService) addTask(c echo.Context) error {
 
 	taskListID := c.Param("id")
 	user := api.mustGetUserService(c)
-	task, err := user.AddTask(&entityservices.AddTaskOptions{
+	task, err := user.TaskService.AddTask(&entityservices.AddTaskOptions{
 		TaskListID: taskListID,
 		Name:       body.Name,
 		Text:       body.Text,
@@ -112,7 +112,7 @@ func (api *APIService) editTask(c echo.Context) error {
 
 	taskID := c.Param("id")
 	user := api.mustGetUserService(c)
-	err := user.EditTask(&entityservices.EditTaskOptions{
+	err := user.TaskService.EditTask(&entityservices.EditTaskOptions{
 		TaskID:     taskID,
 		TaskListID: body.TaskListID,
 		Name:       body.Name,
@@ -124,7 +124,7 @@ func (api *APIService) editTask(c echo.Context) error {
 		return err
 	}
 
-	task, err := user.GetTask(&entityservices.GetTaskOptions{
+	task, err := user.TaskService.GetTask(&entityservices.GetTaskOptions{
 		TaskID:                taskID,
 		IncludeComments:       true,
 		IncludeLabels:         true,
@@ -142,7 +142,7 @@ func (api *APIService) deleteTask(c echo.Context) error {
 	taskID := c.Param("id")
 	user := api.mustGetUserService(c)
 
-	err := user.DeleteTask(&entityservices.DeleteTaskOptions{TaskID: taskID})
+	err := user.TaskService.DeleteTask(&entityservices.DeleteTaskOptions{TaskID: taskID})
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func (api *APIService) addTaskAttachments(c echo.Context) error {
 	taskID := c.Param("id")
 	user := api.mustGetUserService(c)
 
-	err := user.AttachFilesToTask(&entityservices.AttachFilesToTask{
+	err := user.TaskService.AttachFilesToTask(&entityservices.AttachFilesToTask{
 		TaskID:  taskID,
 		FilesID: body.FilesID,
 	})
@@ -203,7 +203,7 @@ func (api *APIService) startTaskTracking(c echo.Context) error {
 	taskID := c.Param("id")
 	user := api.mustGetUserService(c)
 
-	task, err := user.GetTask(&entityservices.GetTaskOptions{
+	task, err := user.TaskService.GetTask(&entityservices.GetTaskOptions{
 		TaskID:                taskID,
 		SkipTextRender:        true,
 		SkipCommentTextRender: true,
@@ -217,7 +217,7 @@ func (api *APIService) startTaskTracking(c echo.Context) error {
 	}
 
 	now := time.Now()
-	err = user.EditTask(&entityservices.EditTaskOptions{
+	err = user.TaskService.EditTask(&entityservices.EditTaskOptions{
 		TaskID:              taskID,
 		DateStartedTracking: &now,
 	})
@@ -232,7 +232,7 @@ func (api *APIService) stopTaskTracking(c echo.Context) error {
 	taskID := c.Param("id")
 	user := api.mustGetUserService(c)
 
-	task, err := user.GetTask(&entityservices.GetTaskOptions{
+	task, err := user.TaskService.GetTask(&entityservices.GetTaskOptions{
 		TaskID:                taskID,
 		SkipTextRender:        true,
 		SkipCommentTextRender: true,
@@ -249,7 +249,7 @@ func (api *APIService) stopTaskTracking(c echo.Context) error {
 	var nullTime time.Time
 	timeSpentSec := task.SpentTime + now.Unix() - task.DateStartedTracking.Unix()
 
-	err = user.EditTask(&entityservices.EditTaskOptions{
+	err = user.TaskService.EditTask(&entityservices.EditTaskOptions{
 		TaskID:              taskID,
 		DateStartedTracking: &nullTime,
 		SpentTime:           &timeSpentSec,
@@ -275,7 +275,7 @@ func (api *APIService) addLabelToTask(c echo.Context) error {
 	taskID := c.Param("id")
 	user := api.mustGetUserService(c)
 
-	err := user.AddLabelToTask(&entityservices.AddLabelToTaskOptions{
+	err := user.TaskService.AddLabelToTask(&entityservices.AddLabelToTaskOptions{
 		TaskID:  taskID,
 		LabelID: body.LabelID,
 	})
@@ -300,7 +300,7 @@ func (api *APIService) deleteLabelFromTask(c echo.Context) error {
 	taskID := c.Param("id")
 	user := api.mustGetUserService(c)
 
-	err := user.DeleteLabelFromTask(&entityservices.AddLabelToTaskOptions{
+	err := user.TaskService.DeleteLabelFromTask(&entityservices.AddLabelToTaskOptions{
 		TaskID:  taskID,
 		LabelID: body.LabelID,
 	})
