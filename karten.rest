@@ -1,0 +1,33 @@
+@api_url = http://{{$dotenv API_HOST}}
+
+###
+
+GET {{api_url}}/ping
+
+###
+
+GET {{api_url}}/cover-images
+
+### Users
+GET {{api_url}}/users/self
+
+
+### Projects
+GET {{api_url}}/projects
+
+
+###
+### Scenarios
+###
+
+### Sign-in as guest
+GET {{api_url}}/users/self
+
+POST {{api_url}}/login
+X-CSRF-Token: kNV6iEsF4iX2SJDCx12V1ImXBjo62bW0
+
+
+GET {{api_url}}/users/self
+
+
+# Content-Type: application/json

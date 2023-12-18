@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -35,7 +35,7 @@ func (p GitHubProvider) GetAccessToken(c *http.Client, code string) (string, err
 		return "", errors.New("GitHub OAuth /login/oauth/access_token returned non 2xx code")
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
 	}
@@ -67,7 +67,7 @@ func (p GitHubProvider) GetUser(c *http.Client, accessToken string) (*UserInfo, 
 	}
 
 	defer user_resp.Body.Close()
-	user_body, err := ioutil.ReadAll(user_resp.Body)
+	user_body, err := io.ReadAll(user_resp.Body)
 	if err != nil {
 		return nil, err
 	}

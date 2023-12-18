@@ -4,7 +4,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/lesnoi-kot/karten-backend/src/filestorage"
 	"github.com/uptrace/bun"
 )
 
@@ -34,11 +33,15 @@ type User struct {
 	Avatar *File `bun:"rel:has-one,join:avatar_id=id"`
 }
 
+func (user User) IsGuest() bool {
+	return user.ID == GuestUserID
+}
+
 type File struct {
 	bun.BaseModel `bun:"table:files"`
 
 	ID              FileID `bun:",pk"`
-	StorageObjectID filestorage.FileID
+	StorageObjectID string
 	Name            string
 	MimeType        string
 	Size            int

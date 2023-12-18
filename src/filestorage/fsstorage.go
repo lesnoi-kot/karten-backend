@@ -20,8 +20,8 @@ func (s FileSystemStorage) Add(data io.Reader) (FileID, int64, error) {
 	return fileID, size, err
 }
 
-func (s FileSystemStorage) Get(id FileID) ([]byte, error) {
-	path := filepath.Join(s.RootPath, id)
+func (s FileSystemStorage) Get(key FileID) ([]byte, error) {
+	path := filepath.Join(s.RootPath, key)
 
 	file, err := os.Open(path)
 	if err != nil {

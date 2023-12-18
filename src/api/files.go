@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -53,7 +53,7 @@ func (api *APIService) uploadImage(c echo.Context) error {
 		return err
 	}
 
-	data, err := ioutil.ReadAll(file)
+	data, err := io.ReadAll(file)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func (api *APIService) uploadFile(c echo.Context) error {
 		return err
 	}
 
-	data, err := ioutil.ReadAll(file)
+	data, err := io.ReadAll(file)
 	if err != nil {
 		return err
 	}
