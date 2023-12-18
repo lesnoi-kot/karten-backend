@@ -88,7 +88,7 @@ func (service AuthService) onRegister(ctx context.Context, user *store.User) err
 		UserID: user.ID,
 	})
 
-	project, err := userContext.ProjectService.AddProject(&entityservices.AddProjectOptions{
+	project, err := userContext.ProjectService.AddProject(entityservices.AddProjectOptions{
 		Name: user.Name,
 	})
 	if err != nil {

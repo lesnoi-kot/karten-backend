@@ -88,7 +88,7 @@ type Project struct {
 
 	ID      EntityID `bun:",pk,autoincrement"`
 	UserID  UserID
-	ShortID string
+	ShortID string `bun:",nullzero"`
 	Name    string
 
 	AvatarID FileID     `bun:",nullzero"`

@@ -23,7 +23,7 @@ type ProjectDTO struct {
 func (api *APIService) getProjects(c echo.Context) error {
 	includes := c.QueryParams()["include"]
 	userService := api.mustGetUserService(c)
-	projects, err := userService.ProjectService.GetProjects(&entityservices.GetProjectsOptions{
+	projects, err := userService.ProjectService.GetProjects(entityservices.GetProjectsOptions{
 		IncludeBoards: lo.Contains(includes, "boards"),
 	})
 	if err != nil {
@@ -37,7 +37,7 @@ func (api *APIService) getProject(c echo.Context) error {
 	projectID := c.Param("id")
 	userService := api.mustGetUserService(c)
 
-	project, err := userService.ProjectService.GetProject(&entityservices.GetProjectOptions{
+	project, err := userService.ProjectService.GetProject(entityservices.GetProjectOptions{
 		ProjectID:     projectID,
 		IncludeBoards: true,
 	})
@@ -63,7 +63,7 @@ func (api *APIService) addProject(c echo.Context) error {
 	}
 
 	userService := api.mustGetUserService(c)
-	project, err := userService.ProjectService.AddProject(&entityservices.AddProjectOptions{
+	project, err := userService.ProjectService.AddProject(entityservices.AddProjectOptions{
 		Name:     body.Name,
 		AvatarID: body.AvatarID,
 	})
@@ -78,7 +78,7 @@ func (api *APIService) deleteProject(c echo.Context) error {
 	projectID := c.Param("id")
 	userService := api.mustGetUserService(c)
 
-	err := userService.ProjectService.DeleteProject(&entityservices.DeleteProjectOptions{
+	err := userService.ProjectService.DeleteProject(entityservices.DeleteProjectOptions{
 		ProjectID: projectID,
 	})
 	if err != nil {
@@ -120,7 +120,7 @@ func (api *APIService) editProject(c echo.Context) error {
 	projectID := c.Param("id")
 	userService := api.mustGetUserService(c)
 
-	err := userService.ProjectService.EditProject(&entityservices.EditProjectOptions{
+	err := userService.ProjectService.EditProject(entityservices.EditProjectOptions{
 		ProjectID: projectID,
 		Name:      body.Name,
 		AvatarID:  body.AvatarID,
@@ -129,7 +129,7 @@ func (api *APIService) editProject(c echo.Context) error {
 		return err
 	}
 
-	project, err := userService.ProjectService.GetProject(&entityservices.GetProjectOptions{
+	project, err := userService.ProjectService.GetProject(entityservices.GetProjectOptions{
 		ProjectID:     projectID,
 		IncludeBoards: false,
 	})

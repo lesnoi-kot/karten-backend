@@ -23,7 +23,7 @@ test:
 test-integration:
 	INTEGRATION_TESTS=1 go test -run ^TestIntegration ./...
 
-docker-test-db:
+test-integration-docker:
 	docker compose -f docker-compose.test.yml up --abort-on-container-exit
 
 ###

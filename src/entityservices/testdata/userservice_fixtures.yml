@@ -1,0 +1,31 @@
+- model: User
+  rows:
+    - id: '{{ get_test_user.ID }}'
+      social_id: '{{ get_test_user.SocialID }}'
+      name: '{{ get_test_user.Name }}'
+      login: '{{ get_test_user.Login }}'
+      email: '{{ get_test_user.Email }}'
+      url: '{{ get_test_user.URL }}'
+    - id: 100
+      social_id: github_100
+      name: Dude
+      login: duder
+      email: hello@dude.me
+
+- model: Project
+  rows:
+    - id: fd5f451d-fac6-4bc7-a677-34adb39a6701
+      user_id: 33
+      name: Personal
+    - id: 2f146153-ee2f-4968-a241-11a4f00bf212
+      user_id: 33
+      name: Business
+    - id: 2d2712eb-266d-4626-b017-697a67907e28
+      user_id: 33
+      name: Just Do It vol. 2023
+    - id: 1f894df2-f233-4885-81ef-e21aee62e2cd
+      user_id: 33
+      name: Science pals
+    - id: 6d8065f4-032f-494d-b124-b7bdf3c6480b
+      user_id: 100
+      name: Cow

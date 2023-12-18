@@ -9,12 +9,12 @@ import (
 )
 
 type IProjectService interface {
-	GetProject(args *GetProjectOptions) (*store.Project, error)
-	GetProjects(args *GetProjectsOptions) ([]*store.Project, error)
-	AddProject(args *AddProjectOptions) (*store.Project, error)
-	EditProject(args *EditProjectOptions) error
+	GetProject(args GetProjectOptions) (*store.Project, error)
+	GetProjects(args GetProjectsOptions) ([]*store.Project, error)
+	AddProject(args AddProjectOptions) (*store.Project, error)
+	EditProject(args EditProjectOptions) error
 	ClearProject(projectID store.EntityID) error
-	DeleteProject(args *DeleteProjectOptions) error
+	DeleteProject(args DeleteProjectOptions) error
 }
 
 type ProjectServiceRequirements interface {
@@ -51,7 +51,7 @@ type DeleteProjectOptions struct {
 	ProjectID store.EntityID
 }
 
-func (projectService ProjectService) GetProject(args *GetProjectOptions) (*store.Project, error) {
+func (projectService ProjectService) GetProject(args GetProjectOptions) (*store.Project, error) {
 	project := new(store.Project)
 	q := projectService.GetStore().ORM.NewSelect().
 		Model(project).
@@ -74,7 +74,7 @@ func (projectService ProjectService) GetProject(args *GetProjectOptions) (*store
 	return project, nil
 }
 
-func (projectService ProjectService) GetProjects(args *GetProjectsOptions) ([]*store.Project, error) {
+func (projectService ProjectService) GetProjects(args GetProjectsOptions) ([]*store.Project, error) {
 	var projects []*store.Project
 
 	q := projectService.GetStore().ORM.NewSelect().
@@ -83,7 +83,7 @@ func (projectService ProjectService) GetProjects(args *GetProjectsOptions) ([]*s
 		Relation("Avatar").
 		Relation("Avatar.Thumbnails")
 
-	if args != nil && args.IncludeBoards {
+	if args.IncludeBoards {
 		q = q.Relation("Boards").Relation("Boards.Cover")
 	}
 
@@ -95,7 +95,7 @@ func (projectService ProjectService) GetProjects(args *GetProjectsOptions) ([]*s
 	return projects, err
 }
 
-func (projectService ProjectService) AddProject(args *AddProjectOptions) (*store.Project, error) {
+func (projectService ProjectService) AddProject(args AddProjectOptions) (*store.Project, error) {
 	project := &store.Project{
 		UserID: projectService.GetActor().UserID,
 		Name:   args.Name,
@@ -123,7 +123,7 @@ func (projectService ProjectService) AddProject(args *AddProjectOptions) (*store
 	return project, nil
 }
 
-func (projectService ProjectService) EditProject(args *EditProjectOptions) error {
+func (projectService ProjectService) EditProject(args EditProjectOptions) error {
 	if args.AvatarID == nil && args.Name == nil {
 		return nil
 	}
@@ -150,7 +150,7 @@ func (projectService ProjectService) EditProject(args *EditProjectOptions) error
 	return nil
 }
 
-func (projectService ProjectService) DeleteProject(args *DeleteProjectOptions) error {
+func (projectService ProjectService) DeleteProject(args DeleteProjectOptions) error {
 	result, err := projectService.GetStore().ORM.NewDelete().
 		Model((*store.Project)(nil)).
 		Where("id = ?", args.ProjectID).

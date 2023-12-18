@@ -29,6 +29,9 @@ func NewStore(cfg StoreConfig) *Store {
 	stdDB := sql.OpenDB(pgdriver.NewConnector(pgdriver.WithDSN(cfg.DSN)))
 	db := bun.NewDB(stdDB, pgdialect.New())
 
+	db.RegisterModel((*User)(nil))
+	db.RegisterModel((*Project)(nil))
+
 	db.RegisterModel((*ImageThumbnailAssoc)(nil))
 	db.RegisterModel((*AttachmentToTaskAssoc)(nil))
 	db.RegisterModel((*AttachmentToCommentAssoc)(nil))

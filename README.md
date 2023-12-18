@@ -16,7 +16,7 @@ make run-local
 ## Run intergation tests
 
 ```sh
-make docker-test-db
+make test-integration-docker
 
 # Debugging integration tests
 make start-test-db
@@ -30,3 +30,5 @@ make stop-test-db
 - Functional tests with Hurl
 - Contexted logging in a model operation boundary (eg: implicitly pass id of a project to logger in order to mantain and filter logs)
 - minio s3
+- testcontainers
+- mockery
