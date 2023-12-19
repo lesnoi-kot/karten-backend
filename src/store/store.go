@@ -31,6 +31,8 @@ func NewStore(cfg StoreConfig) *Store {
 
 	db.RegisterModel((*User)(nil))
 	db.RegisterModel((*Project)(nil))
+	db.RegisterModel((*Board)(nil))
+	db.RegisterModel((*File)(nil))
 
 	db.RegisterModel((*ImageThumbnailAssoc)(nil))
 	db.RegisterModel((*AttachmentToTaskAssoc)(nil))

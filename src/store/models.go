@@ -8,7 +8,7 @@ import (
 )
 
 type (
-	UserID     = int
+	UserID     int
 	FileID     = string
 	EntityID   = string
 	LabelID    = int
@@ -16,17 +16,17 @@ type (
 	Color      = int
 )
 
-const GuestUserID = 1
+const GuestUserID UserID = 1
 
 type User struct {
 	bun.BaseModel `bun:"table:users"`
 
 	ID          UserID `bun:",pk,autoincrement"`
-	SocialID    string
+	SocialID    string `json:"-"`
 	AvatarID    FileID `bun:",nullzero"`
 	Name        string
 	Login       string
-	Email       string
+	Email       string `json:"-"`
 	URL         string
 	DateCreated time.Time
 
@@ -67,7 +67,7 @@ type Board struct {
 
 	ID             EntityID `bun:",pk"`
 	UserID         UserID
-	ShortID        string
+	ShortID        string `bun:",nullzero"`
 	Name           string
 	ProjectID      string
 	Archived       bool
@@ -75,7 +75,7 @@ type Board struct {
 	DateCreated    time.Time
 	DateLastViewed time.Time
 	Color          Color
-	CoverID        *FileID `bun:"cover_id,nullzero"`
+	CoverID        *FileID `bun:",nullzero"`
 
 	TaskLists []*TaskList `bun:"rel:has-many,join:id=board_id"`
 	Labels    []*Label    `bun:"rel:has-many,join:id=board_id"`
@@ -86,7 +86,7 @@ type Board struct {
 type Project struct {
 	bun.BaseModel `bun:"table:projects"`
 
-	ID      EntityID `bun:",pk,autoincrement"`
+	ID      EntityID `bun:",pk"`
 	UserID  UserID
 	ShortID string `bun:",nullzero"`
 	Name    string

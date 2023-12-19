@@ -10,7 +10,7 @@ import (
 func projectToDTO(project *store.Project) *ProjectDTO {
 	dto := &ProjectDTO{
 		ID:      project.ID,
-		UserID:  project.UserID,
+		UserID:  int(project.UserID),
 		ShortID: project.ShortID,
 		Name:    project.Name,
 	}
@@ -78,7 +78,7 @@ func filesToDTO(files []*store.File) []*FileDTO {
 func boardToDTO(board *store.Board) *BoardDTO {
 	dto := &BoardDTO{
 		ID:             board.ID,
-		UserID:         board.UserID,
+		UserID:         int(board.UserID),
 		ShortID:        board.ShortID,
 		Name:           board.Name,
 		ProjectID:      board.ProjectID,
@@ -116,7 +116,7 @@ func taskListToDTO(taskList *store.TaskList) *TaskListDTO {
 	dto := &TaskListDTO{
 		ID:          taskList.ID,
 		BoardID:     taskList.BoardID,
-		UserID:      taskList.UserID,
+		UserID:      int(taskList.UserID),
 		Position:    taskList.Position,
 		Name:        taskList.Name,
 		Archived:    taskList.Archived,
@@ -137,7 +137,7 @@ func labelToDTO(label *store.Label) *LabelDTO {
 	return &LabelDTO{
 		ID:      label.ID,
 		BoardID: label.BoardID,
-		UserID:  label.UserID,
+		UserID:  int(label.UserID),
 		Name:    label.Name,
 		Color:   label.Color,
 	}
@@ -146,7 +146,7 @@ func labelToDTO(label *store.Label) *LabelDTO {
 func taskToDTO(task *store.Task) *TaskDTO {
 	dto := &TaskDTO{
 		ID:                  task.ID,
-		UserID:              task.UserID,
+		UserID:              int(task.UserID),
 		ShortID:             task.ShortID,
 		TaskListID:          task.TaskListID,
 		Position:            task.Position,
@@ -185,7 +185,7 @@ func commentToDTO(comment *store.Comment) *CommentDTO {
 	dto := &CommentDTO{
 		ID:          comment.ID,
 		TaskID:      comment.TaskID,
-		UserID:      comment.UserID,
+		UserID:      int(comment.UserID),
 		Text:        comment.Text,
 		HTML:        comment.HTML,
 		DateCreated: comment.DateCreated,
@@ -206,7 +206,7 @@ func commentToDTO(comment *store.Comment) *CommentDTO {
 
 func userToDTO(user *store.User) *UserDTO {
 	dto := &UserDTO{
-		ID:          user.ID,
+		ID:          int(user.ID),
 		SocialID:    user.SocialID,
 		Name:        user.Name,
 		Login:       user.Login,
@@ -221,7 +221,7 @@ func userToDTO(user *store.User) *UserDTO {
 
 func publicUserToDTO(user *store.User) *PublicUserDTO {
 	dto := &PublicUserDTO{
-		ID:          user.ID,
+		ID:          int(user.ID),
 		Name:        user.Name,
 		AvatarURL:   urlprovider.GetFileURL(user.Avatar),
 		DateCreated: user.DateCreated,

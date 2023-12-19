@@ -19,7 +19,7 @@ func getUserSession(c echo.Context) (*sessions.Session, error) {
 	return session.Get(USER_SESSION_KEY, c)
 }
 
-func getUserID(c echo.Context) (int, error) {
+func getUserID(c echo.Context) (store.UserID, error) {
 	sess, err := getUserSession(c)
 	if err != nil {
 		return 0, fmt.Errorf("Cannot retrieve session: %w", err)
@@ -30,18 +30,18 @@ func getUserID(c echo.Context) (int, error) {
 		return 0, errors.New("Empty session")
 	}
 
-	if _, ok = userID.(int); !ok {
+	if _, ok = userID.(store.UserID); !ok {
 		return 0, errors.New("Invalid session user id")
 	}
 
-	return userID.(int), nil
+	return userID.(store.UserID), nil
 }
 
 func getUser(c echo.Context) *store.User {
 	return c.Get("user").(*store.User)
 }
 
-func setUserSession(c echo.Context, userID int) error {
+func setUserSession(c echo.Context, userID store.UserID) error {
 	sess, _ := session.Get(USER_SESSION_KEY, c)
 	sess.Values[SESSION_KEY_USER_ID] = userID
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
