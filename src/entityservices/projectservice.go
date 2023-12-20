@@ -29,6 +29,8 @@ type ProjectService struct {
 
 type GetProjectsOptions struct {
 	IncludeBoards bool
+	OrderBy       OrderBy
+	Limit         int
 }
 
 type GetProjectOptions struct {
@@ -85,6 +87,12 @@ func (projectService ProjectService) GetProjects(args GetProjectsOptions) ([]*st
 
 	if args.IncludeBoards {
 		q = q.Relation("Boards").Relation("Boards.Cover")
+	}
+	if args.OrderBy == OrderByDateCreated {
+		q = q.Order("project.date_created ASC")
+	}
+	if args.Limit > 0 {
+		q = q.Limit(args.Limit)
 	}
 
 	err := q.Scan(context.TODO())

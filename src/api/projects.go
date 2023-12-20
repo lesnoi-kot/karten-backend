@@ -22,9 +22,16 @@ type ProjectDTO struct {
 
 func (api *APIService) getProjects(c echo.Context) error {
 	includes := c.QueryParams()["include"]
+
+	var orderBy entityservices.OrderBy
+	if c.QueryParam("order_by") == "date" {
+		orderBy = entityservices.OrderByDateCreated
+	}
+
 	userService := api.mustGetUserService(c)
 	projects, err := userService.ProjectService.GetProjects(entityservices.GetProjectsOptions{
 		IncludeBoards: lo.Contains(includes, "boards"),
+		OrderBy:       orderBy,
 	})
 	if err != nil {
 		return err

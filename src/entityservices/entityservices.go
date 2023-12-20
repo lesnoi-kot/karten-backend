@@ -12,6 +12,14 @@ var (
 	ErrResourceNotFound       = errors.New("resource not found")
 )
 
+type OrderBy int
+
+const (
+	OrderByNothing OrderBy = iota
+	OrderByDateCreated
+	OrderByName
+)
+
 type Actor struct {
 	UserID store.UserID
 }

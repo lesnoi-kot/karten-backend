@@ -86,10 +86,11 @@ type Board struct {
 type Project struct {
 	bun.BaseModel `bun:"table:projects"`
 
-	ID      EntityID `bun:",pk"`
-	UserID  UserID
-	ShortID string `bun:",nullzero"`
-	Name    string
+	ID          EntityID `bun:",pk"`
+	UserID      UserID
+	ShortID     string `bun:",nullzero"`
+	Name        string
+	DateCreated time.Time
 
 	AvatarID FileID     `bun:",nullzero"`
 	Avatar   *ImageFile `bun:"rel:has-one,join:avatar_id=id"`

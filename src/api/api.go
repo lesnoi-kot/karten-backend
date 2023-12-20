@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-playground/validator"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
@@ -221,7 +222,11 @@ func (api *APIService) ping(c echo.Context) error {
 }
 
 func (api *APIService) errorHandler(err error, c echo.Context) {
-	api.handler.DefaultHTTPErrorHandler(err, c)
+	if _, ok := err.(validator.ValidationErrors); ok {
+		c.JSON(http.StatusBadRequest, Error("Validation errors"))
+	} else {
+		api.handler.DefaultHTTPErrorHandler(err, c)
+	}
 }
 
 func (a APIService) Start(address string) error {

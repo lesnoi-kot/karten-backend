@@ -1,11 +1,11 @@
 package api
 
-type Response struct {
-	Data any `json:"data"`
+type Response[T any] struct {
+	Data T `json:"data"`
 }
 
-func OK(data any) Response {
-	return Response{data}
+func OK[T any](data T) Response[T] {
+	return Response[T]{data}
 }
 
 type ErrorResponse struct {

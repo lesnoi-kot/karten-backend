@@ -25,6 +25,9 @@ func projectToDTO(project *store.Project) *ProjectDTO {
 
 	if len(project.Boards) > 0 {
 		dto.Boards = lo.Map(project.Boards, func(board *store.Board, index int) *BoardDTO {
+			if board.Project == nil {
+				board.Project = project
+			}
 			return boardToDTO(board)
 		})
 	}

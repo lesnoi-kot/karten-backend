@@ -32,7 +32,8 @@ CREATE TABLE projects (
   user_id      integer NOT NULL REFERENCES users ON DELETE CASCADE,
   short_id     varchar(12) GENERATED ALWAYS AS (substring(id::text, 25)) STORED,
   name         varchar(32) NOT NULL CHECK (length("name") > 0),
-  avatar_id    uuid REFERENCES files ON DELETE SET NULL
+  avatar_id    uuid REFERENCES files ON DELETE SET NULL,
+  date_created timestamp DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE boards (

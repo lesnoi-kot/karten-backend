@@ -43,12 +43,12 @@ type EchoValidator struct {
 	validator *validator.Validate
 }
 
-func newEchoValidator() EchoValidator {
-	return EchoValidator{validator.New()}
-}
-
 func (v EchoValidator) Validate(i interface{}) error {
 	return v.validator.Struct(i)
+}
+
+func newEchoValidator() EchoValidator {
+	return EchoValidator{validator.New()}
 }
 
 func parseError(next echo.HandlerFunc) echo.HandlerFunc {
