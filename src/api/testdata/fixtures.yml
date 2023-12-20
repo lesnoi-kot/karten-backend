@@ -1,0 +1,67 @@
+- model: File
+  rows:
+    - id: eb89c220-34ad-4c4f-83af-7c31f4acffdc
+      storage_object_id: 9878f395-9987-42f4-8a49-282812612d5e
+      name: 'cool_board.png'
+      mime_type: 'image/png'
+      size: 342567
+
+- model: User
+  rows:
+    - id: "{{ get_test_user.ID }}"
+      social_id: "{{ get_test_user.SocialID }}"
+      name: "{{ get_test_user.Name }}"
+      login: "{{ get_test_user.Login }}"
+      email: "{{ get_test_user.Email }}"
+      url: "{{ get_test_user.URL }}"
+    - id: 100
+      social_id: github_100
+      name: Dude
+      login: duder
+      email: hello@dude.me
+
+- model: Project
+  rows:
+    - id: fd5f451d-fac6-4bc7-a677-34adb39a6701
+      user_id: "{{ get_test_user.ID }}"
+      name: TO BE DELETED
+      date_created: 2023-12-18T22:34:02.713Z
+
+    - id: 2f146153-ee2f-4968-a241-11a4f00bf212
+      user_id: "{{ get_test_user.ID }}"
+      name: Business
+      date_created: 2023-12-19T22:34:02.713Z
+
+    - id: 2d2712eb-266d-4626-b017-697a67907e28
+      user_id: "{{ get_test_user.ID }}"
+      name: Just Do It vol. 2023
+      date_created: 2023-12-16T22:34:02.713Z
+
+    - id: 1f894df2-f233-4885-81ef-e21aee62e2cd
+      user_id: "{{ get_test_user.ID }}"
+      name: Science pals
+      date_created: 2023-12-15T22:34:02.713Z
+
+    - id: 6d8065f4-032f-494d-b124-b7bdf3c6480b
+      user_id: 100
+      name: Cow
+      date_created: 2023-12-19T22:34:02.713Z
+
+- model: Board
+  rows:
+    - id: 36461fd5-2eb4-42b9-a921-b4428a448cfa
+      user_id: '{{ get_test_user.ID }}'
+      name: Red board
+      project_id: 2f146153-ee2f-4968-a241-11a4f00bf212
+      archived: false
+      favorite: true
+      color: 0x334455
+      cover_id: eb89c220-34ad-4c4f-83af-7c31f4acffdc
+
+    - id: ec5da06b-6c0d-4439-9b04-b9da7266ba2f
+      user_id: '{{ get_test_user.ID }}'
+      name: Green board
+      project_id: 1f894df2-f233-4885-81ef-e21aee62e2cd
+      archived: false
+      favorite: true
+      color: 0x123456

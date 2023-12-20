@@ -114,8 +114,9 @@ func (api *APIService) clearProject(c echo.Context) error {
 
 func (api *APIService) editProject(c echo.Context) error {
 	var body struct {
-		Name     *string       `json:"name" validate:"omitempty,min=1,max=32"`
-		AvatarID *store.FileID `json:"avatar_id"`
+		ProjectID string        `param:"id" validate:"uuid"`
+		Name      *string       `json:"name" validate:"omitempty,min=1,max=32"`
+		AvatarID  *store.FileID `json:"avatar_id"`
 	}
 	if err := c.Bind(&body); err != nil {
 		return err

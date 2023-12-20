@@ -2,164 +2,124 @@ package api_test
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
+	"text/template"
 	"time"
 
 	"github.com/lesnoi-kot/karten-backend/src/api"
+	"github.com/lesnoi-kot/karten-backend/src/entityservices"
+	"github.com/lesnoi-kot/karten-backend/src/filestorage"
+	"github.com/lesnoi-kot/karten-backend/src/settings"
 	"github.com/lesnoi-kot/karten-backend/src/store"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+	"github.com/uptrace/bun/dbfixture"
 	"go.uber.org/zap"
 )
 
-var testDate = time.Unix(0, 0).UTC()
-
-type (
-	mockBoardsStore    struct{ mock.Mock }
-	mockProjectsStore  struct{ mock.Mock }
-	mockTaskListsStore struct{ mock.Mock }
-	mockTasksStore     struct{ mock.Mock }
-	mockCommentsStore  struct{ mock.Mock }
+var (
+	testDate = time.Unix(0, 0).UTC()
+	testUser = store.User{
+		ID:       33,
+		SocialID: "ae4f869a3f59db15cd8173b451c97025",
+		Name:     "john_doe",
+		Login:    "John Doe",
+		Email:    "john_doe@hotmail.com",
+		URL:      "www.google.com",
+	}
+	fixturesFS = os.DirFS("./testdata")
 )
 
-type baseAPITestSuite struct {
+type APITestSuite struct {
 	suite.Suite
-
-	store *store.Store
-	api   *api.APIService
-
-	projectsMock  *mockProjectsStore
-	boardsMock    *mockBoardsStore
-	taskListsMock *mockTaskListsStore
-	tasksMock     *mockTasksStore
-	commentsMock  *mockCommentsStore
+	store         *store.Store
+	fileStorage   filestorage.FileStorage
+	api           *api.APIService
+	fixtureLoader *dbfixture.Fixture
 }
 
-func (suite *baseAPITestSuite) init() {
-	suite.projectsMock = new(mockProjectsStore)
-	suite.boardsMock = new(mockBoardsStore)
-	suite.taskListsMock = new(mockTaskListsStore)
-	suite.tasksMock = new(mockTasksStore)
-	suite.commentsMock = new(mockCommentsStore)
+func TestIntegrationAPI(t *testing.T) {
+	if os.Getenv("INTEGRATION_TESTS") == "" {
+		t.Skip("api intergation tests are skipped")
+	}
 
-	suite.store = &store.Store{}
+	suite.Run(t, new(APITestSuite))
+}
+
+func (suite *APITestSuite) SetupSuite() {
+	settings.AppConfig.SessionsSecretKey = "test"
+	settings.AppConfig.SessionsStorePath = "" // = os.TempDir()
+	settings.AppConfig.EnableGuest = true
+	settings.AppConfig.MediaURL = "http://nginx:80/"
+
+	suite.fileStorage, _ = filestorage.NewFileSystemStorage(os.TempDir())
+	suite.store = store.NewStore(store.StoreConfig{
+		DSN:    os.Getenv("STORE_DSN"),
+		Logger: zap.NewNop().Sugar(),
+		Debug:  false,
+	})
+
+	suite.fixtureLoader = dbfixture.New(
+		suite.store.ORM,
+		dbfixture.WithTruncateTables(),
+		dbfixture.WithTemplateFuncs(template.FuncMap{
+			"get_test_user": func() store.User {
+				return testUser
+			},
+		}))
+
+	if err := suite.fixtureLoader.Load(context.Background(), fixturesFS, "fixtures.yml"); err != nil {
+		suite.T().Fatalf("Fixture load error: %s", err)
+	}
+
 	suite.api = api.NewAPI(api.APIConfig{
-		Store:     suite.store,
-		Logger:    zap.NewNop().Sugar(),
-		APIPrefix: "",
-		Debug:     true,
+		Store:       suite.store,
+		Logger:      zap.Must(zap.NewDevelopment()).Sugar(),
+		FileStorage: nil,
+		ContextsContainer: entityservices.ContextsContainer{
+			Store:       suite.store,
+			FileStorage: nil,
+		},
+		FrontendURL:  "",
+		APIPrefix:    "",
+		CookieDomain: "",
+		Debug:        false,
 	})
 }
 
-func (suite *baseAPITestSuite) SetupTest() {
-	suite.init()
+func (suite *APITestSuite) authorizeRequest(r *http.Request, userID store.UserID) error {
+	sess, err := suite.api.SessionStore.Get(r, api.USER_SESSION_KEY)
+	sess.Values[api.SESSION_KEY_USER_ID] = userID
+	if err != nil {
+		return err
+	}
+
+	rec := httptest.NewRecorder()
+	if err = sess.Save(r, rec); err != nil {
+		return err
+	}
+
+	for _, c := range rec.Result().Cookies() {
+		r.AddCookie(c)
+	}
+
+	return nil
 }
 
-func (m mockBoardsStore) Get(ctx context.Context, id string) (*store.Board, error) {
-	args := m.Called(id)
-	return args.Get(0).(*store.Board), args.Error(1)
-}
+func (suite *APITestSuite) setCSRF(outer *http.Request) string {
+	req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+	rec := httptest.NewRecorder()
+	suite.api.Server().Handler.ServeHTTP(rec, req)
 
-func (m mockBoardsStore) Add(ctx context.Context, a *store.Board) error {
-	args := m.Called(a)
-	return args.Error(0)
-}
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == "_csrf" {
+			outer.AddCookie(c)
+			outer.Header.Add("X-CSRF-Token", c.Value)
+			return c.Value
+		}
+	}
 
-func (m mockBoardsStore) Update(ctx context.Context, a *store.Board) error {
-	args := m.Called(a)
-	return args.Error(0)
-}
-
-func (m mockBoardsStore) Delete(ctx context.Context, id string) error {
-	args := m.Called(id)
-	return args.Error(0)
-}
-
-func (m mockBoardsStore) UpdateColumns(ctx context.Context, item *store.Board, columns ...string) error {
-	args := m.Called(item, columns)
-	return args.Error(0)
-}
-
-func (m mockProjectsStore) Get(ctx context.Context, id string) (*store.Project, error) {
-	args := m.Called(id)
-	return args.Get(0).(*store.Project), args.Error(1)
-}
-
-func (m mockProjectsStore) GetAll(ctx context.Context) ([]*store.Project, error) {
-	args := m.Called()
-	return args.Get(0).([]*store.Project), args.Error(1)
-}
-
-func (m mockProjectsStore) Add(ctx context.Context, item *store.Project) error {
-	args := m.Called(item)
-	return args.Error(0)
-}
-
-func (m mockProjectsStore) Update(ctx context.Context, item *store.Project) error {
-	args := m.Called(item)
-	return args.Error(0)
-}
-
-func (m mockProjectsStore) Delete(ctx context.Context, id string) error {
-	args := m.Called(id)
-	return args.Error(0)
-}
-
-func (m mockTaskListsStore) Get(ctx context.Context, id string) (*store.TaskList, error) {
-	args := m.Called(id)
-	return args.Get(0).(*store.TaskList), args.Error(1)
-}
-
-func (m mockTaskListsStore) Add(ctx context.Context, item *store.TaskList) error {
-	args := m.Called(item)
-	return args.Error(0)
-}
-
-func (m mockTaskListsStore) Update(ctx context.Context, item *store.TaskList) error {
-	args := m.Called(item)
-	return args.Error(0)
-}
-
-func (m mockTaskListsStore) Delete(ctx context.Context, id string) error {
-	args := m.Called(id)
-	return args.Error(0)
-}
-
-func (m mockTasksStore) Get(ctx context.Context, id string) (*store.Task, error) {
-	args := m.Called(id)
-	return args.Get(0).(*store.Task), args.Error(1)
-}
-
-func (m mockTasksStore) Add(ctx context.Context, item *store.Task) error {
-	args := m.Called(item)
-	return args.Error(0)
-}
-
-func (m mockTasksStore) Update(ctx context.Context, item *store.Task) error {
-	args := m.Called(item)
-	return args.Error(0)
-}
-
-func (m mockTasksStore) Delete(ctx context.Context, id string) error {
-	args := m.Called(id)
-	return args.Error(0)
-}
-
-func (m mockCommentsStore) Get(ctx context.Context, id string) (*store.Comment, error) {
-	args := m.Called(id)
-	return args.Get(0).(*store.Comment), args.Error(1)
-}
-
-func (m mockCommentsStore) Add(ctx context.Context, item *store.Comment) error {
-	args := m.Called(item)
-	return args.Error(0)
-}
-
-func (m mockCommentsStore) Update(ctx context.Context, item *store.Comment) error {
-	args := m.Called(item)
-	return args.Error(0)
-}
-
-func (m mockCommentsStore) Delete(ctx context.Context, id string) error {
-	args := m.Called(id)
-	return args.Error(0)
+	return ""
 }

@@ -224,6 +224,8 @@ func (api *APIService) ping(c echo.Context) error {
 func (api *APIService) errorHandler(err error, c echo.Context) {
 	if _, ok := err.(validator.ValidationErrors); ok {
 		c.JSON(http.StatusBadRequest, Error("Validation errors"))
+	} else if _, ok := err.(*echo.BindingError); ok {
+		c.JSON(http.StatusBadRequest, Error("Validation errors"))
 	} else {
 		api.handler.DefaultHTTPErrorHandler(err, c)
 	}
